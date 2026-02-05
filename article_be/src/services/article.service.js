@@ -23,19 +23,19 @@ export const createArticle = async ({
 };
 
 export const getArticles = async ({ page, limit, category, status }) => {
-  const offset = (page - 1) * limit
+  const offset = (page - 1) * limit;
 
-  let where = 'WHERE 1=1'
-  const values = []
+  let where = "WHERE 1=1";
+  const values = [];
 
   if (status) {
-    values.push(status)
-    where += ` AND a.status = $${values.length}`
+    values.push(status);
+    where += ` AND a.status = $${values.length}`;
   }
 
   if (category) {
-    values.push(category)
-    where += ` AND a.category_id = $${values.length}`
+    values.push(category);
+    where += ` AND a.category_id = $${values.length}`;
   }
 
   const query = `
@@ -53,20 +53,19 @@ export const getArticles = async ({ page, limit, category, status }) => {
     ${where}
     ORDER BY a.created_at DESC
     LIMIT $${values.length + 1} OFFSET $${values.length + 2}
-  `
+  `;
 
-  const data = await pool.query(query, [...values, limit, offset])
+  const data = await pool.query(query, [...values, limit, offset]);
   const total = await pool.query(
     `SELECT COUNT(*) FROM articles a ${where}`,
-    values
-  )
+    values,
+  );
 
   return {
     data: data.rows,
     total: Number(total.rows[0].count),
-  }
-}
-
+  };
+};
 
 export const getArticleById = async (id) => {
   const { rows } = await pool.query(
@@ -76,6 +75,7 @@ export const getArticleById = async (id) => {
       a.title,
       a.content,
       a.status,
+      a.user_id, -- TAMBAHKAN INI agar controller bisa baca owner-nya
       a.created_at,
       c.name AS category_name,
       u.fullname AS Author
@@ -90,6 +90,14 @@ export const getArticleById = async (id) => {
   return rows[0];
 };
 
+// Fungsi delete sudah benar, pastikan controller memanggilnya dengan 2 argumen
+export const deleteArticle = async (id, userId) => {
+  const query =
+    "DELETE FROM articles WHERE id = $1 AND user_id = $2 RETURNING id";
+  const { rows } = await pool.query(query, [id, userId]);
+  return rows.length > 0;
+};
+
 export const updateArticle = async ({ id, title, content, category_id }) => {
   const query = `
     UPDATE articles
@@ -99,10 +107,6 @@ export const updateArticle = async ({ id, title, content, category_id }) => {
   `;
   const { rows } = await pool.query(query, [title, content, category_id, id]);
   return rows[0];
-};
-
-export const deleteArticle = async (id) => {
-  await pool.query("DELETE FROM articles WHERE id = $1", [id]);
 };
 
 export const updateStatus = async ({ id, status }) => {
@@ -125,15 +129,14 @@ export const approveArticle = async (id) => {
       updated_at = NOW()
     WHERE id = $1
     RETURNING *
-  `
-  const { rows } = await pool.query(query, [id])
-  return rows[0]
-}
-
+  `;
+  const { rows } = await pool.query(query, [id]);
+  return rows[0];
+};
 
 export const rejectArticle = async ({ id, reason }) => {
   if (!reason) {
-    throw new Error('Reject reason is required')
+    throw new Error("Reject reason is required");
   }
 
   const query = `
@@ -144,10 +147,10 @@ export const rejectArticle = async ({ id, reason }) => {
       updated_at = NOW()
     WHERE id = $2
     RETURNING *
-  `
-  const { rows } = await pool.query(query, [reason, id])
-  return rows[0]
-}
+  `;
+  const { rows } = await pool.query(query, [reason, id]);
+  return rows[0];
+};
 
 export const getPublicArticleById = async (id) => {
   const { rows } = await pool.query(
@@ -164,11 +167,11 @@ export const getPublicArticleById = async (id) => {
     JOIN users u ON u.id = a.user_id
     WHERE a.id = $1 AND a.status = 'approved'
     `,
-    [id]
-  )
+    [id],
+  );
 
-  return rows[0]
-}
+  return rows[0];
+};
 
 export const getArticleByIdAdmin = async (id) => {
   const { rows } = await pool.query(
@@ -182,25 +185,20 @@ export const getArticleByIdAdmin = async (id) => {
     JOIN users u ON u.id = a.user_id
     WHERE a.id = $1
     `,
-    [id]
-  )
+    [id],
+  );
 
-  return rows[0]
-}
+  return rows[0];
+};
 
-export const getArticlesByUser = async ({
-  user_id,
-  page,
-  limit,
-  status,
-}) => {
-  const offset = (page - 1) * limit
-  const values = [user_id]
-  let where = `WHERE a.user_id = $1`
+export const getArticlesByUser = async ({ user_id, page, limit, status }) => {
+  const offset = (page - 1) * limit;
+  const values = [user_id];
+  let where = `WHERE a.user_id = $1`;
 
   if (status) {
-    values.push(status)
-    where += ` AND a.status = $${values.length}`
+    values.push(status);
+    where += ` AND a.status = $${values.length}`;
   }
 
   const query = `
@@ -216,17 +214,17 @@ export const getArticlesByUser = async ({
     ORDER BY a.created_at DESC
     LIMIT $${values.length + 1}
     OFFSET $${values.length + 2}
-  `
+  `;
 
-  const data = await pool.query(query, [...values, limit, offset])
+  const data = await pool.query(query, [...values, limit, offset]);
 
   const total = await pool.query(
     `SELECT COUNT(*) FROM articles a ${where}`,
-    values
-  )
+    values,
+  );
 
   return {
     data: data.rows,
     total: Number(total.rows[0].count),
-  }
-}
+  };
+};

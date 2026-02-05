@@ -15,6 +15,7 @@ router.get("/", controller.findAllApproved);
 ======================= */
 router.post("/create", authMiddleware, controller.create);
 router.get("/my", authMiddleware, controller.findMyArticles);
+router.get("/:id", authMiddleware, controller.update);
 
 /* =======================
    ADMIN / MODERATOR
@@ -23,7 +24,7 @@ router.get(
   "/admin/list",
   authMiddleware,
   roleMiddleware(["admin", "moderator"]),
-  controller.findAllAdmin
+  controller.findAllAdmin,
 );
 
 /* =======================
@@ -36,13 +37,13 @@ router.patch(
   "/:id/approve",
   authMiddleware,
   roleMiddleware(["admin", "moderator"]),
-  controller.approve
+  controller.approve,
 );
 router.patch(
   "/:id/reject",
   authMiddleware,
   roleMiddleware(["admin", "moderator"]),
-  controller.reject
+  controller.reject,
 );
 
 export default router;

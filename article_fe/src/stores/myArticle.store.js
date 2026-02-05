@@ -87,24 +87,62 @@ export const useMyArticleStore = defineStore('my-article', {
       }
     },
 
+    async updateArticle(id, payload) {
+      this.loading.update = true
+      this.error = null
+
+      // ambil snapshot untuk rollback jika gagal
+      const snapshot = [...this.articles]
+      const index = this.articles.findIndex((a) => a.id === id)
+
+      if (index === -1) {
+        this.loading.update = false
+        throw new Error('Article not found in local state')
+      }
+
+      // Optimistic update
+      this.articles[index] = { ...this.articles[index], ...payload }
+
+      try {
+        const res = await updateArticleApi(id, payload)
+
+        // pastikan state sinkron dengan data dari server
+        this.articles[index] = res.data
+        return res.data
+      } catch (err) {
+        // rollback
+        this.articles = snapshot
+        this.error = 'Failed to update article. Please try again.'
+        throw err
+      } finally {
+        this.loading.update = false
+      }
+    },
+
     async deleteArticle(id) {
       this.loading.delete = true
       this.error = null
 
-      // snapshot untuk rollback
       const snapshot = [...this.articles]
-
-      // Optimistic remove
+      // Optimistic update
       this.articles = this.articles.filter((a) => a.id !== id)
       this.pagination.total--
 
       try {
         await deleteArticleApi(id)
+
+        if (this.articles.length === 0 && this.pagination.total > 0) {
+          const prevPage = Math.max(1, this.pagination.page - 1)
+          await this.fetchMyArticles({ page: prevPage })
+        } else if (this.articles.length < this.pagination.limit / 2) {
+          // Opsional: refetch jika data di layar terlalu sedikit setelah delete
+          await this.fetchMyArticles({ page: this.pagination.page })
+        }
       } catch (err) {
-        // rollback jika gagal
+        // Rollback
         this.articles = snapshot
         this.pagination.total++
-        this.error = err
+        this.error = 'Failed to delete article. Please try again.'
         throw err
       } finally {
         this.loading.delete = false
