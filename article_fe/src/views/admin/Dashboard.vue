@@ -1,9 +1,11 @@
 <script setup>
 import { onMounted } from 'vue'
 import { useAdminStore } from '@/stores/admin.store'
-import { useRouter } from 'vue-router';
+import { useActivityStore } from '@/stores/activity.store'
+import { useRouter } from 'vue-router'
 
 const adminStore = useAdminStore()
+const activityStore = useActivityStore()
 const router = useRouter()
 
 const adminArticles = () => {
@@ -11,7 +13,7 @@ const adminArticles = () => {
 }
 
 onMounted(() => {
-  adminStore.fetchDashboard()
+  ;(adminStore.fetchDashboard(), activityStore.fetchActivity({ limit: 5 }))
 })
 </script>
 
@@ -361,16 +363,43 @@ onMounted(() => {
       </section>
 
       <!-- Recent Activity -->
-      <section
-        v-if="adminStore.stats"
-        class="bg-white rounded-2xl border border-gray-200 overflow-hidden"
-      >
+      <section class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+        <!-- Header -->
         <div class="px-6 py-5 border-b border-gray-200">
           <h3 class="text-lg font-semibold text-gray-900">Recent Activity</h3>
           <p class="text-sm text-gray-600 mt-1">Latest system events and updates</p>
         </div>
+
         <div class="p-6">
-          <div class="flex items-center justify-center py-12">
+          <!-- Loading -->
+          <div v-if="activityStore.loading" class="flex justify-center py-12">
+            <svg class="w-8 h-8 animate-spin text-gray-400" fill="none" viewBox="0 0 24 24">
+              <circle
+                class="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                stroke-width="4"
+              />
+              <path
+                class="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+              />
+            </svg>
+          </div>
+
+          <!-- Error -->
+          <div v-else-if="activityStore.error" class="text-center py-8 text-red-600 text-sm">
+            {{ activityStore.error }}
+          </div>
+
+          <!-- Empty -->
+          <div
+            v-else-if="activityStore.activities.length === 0"
+            class="flex items-center justify-center py-12"
+          >
             <div class="text-center">
               <div
                 class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4"
@@ -393,6 +422,39 @@ onMounted(() => {
               <p class="text-xs text-gray-500 mt-1">Activity logs will appear here</p>
             </div>
           </div>
+
+          <!-- Activity List -->
+          <ul v-else class="space-y-4">
+            <li v-for="a in activityStore.activities" :key="a.id" class="flex items-start gap-3">
+              <!-- Icon -->
+              <div class="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center">
+                <svg
+                  class="w-4 h-4 text-blue-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M13 16h-1v-4h-1m1-4h.01"
+                  />
+                </svg>
+              </div>
+
+              <!-- Content -->
+              <div class="flex-1">
+                <p class="text-sm text-gray-800 font-medium">
+                  {{ a.action.replaceAll('_', ' ') }}
+                </p>
+                <p class="text-xs text-gray-500">
+                  User #{{ a.user_id }} ·
+                  {{ new Date(a.created_at).toLocaleString() }}
+                </p>
+              </div>
+            </li>
+          </ul>
         </div>
       </section>
     </div>

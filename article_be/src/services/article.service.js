@@ -75,7 +75,7 @@ export const getArticleById = async (id) => {
       a.title,
       a.content,
       a.status,
-      a.user_id, -- TAMBAHKAN INI agar controller bisa baca owner-nya
+      a.user_id,
       a.created_at,
       c.name AS category_name,
       u.fullname AS Author

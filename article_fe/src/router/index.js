@@ -47,10 +47,15 @@ const routes = [
         meta: { requiresAuth: true },
       },
       {
+        path: 'write/:id',
+        component: () => import('@/views/user/Write.vue'),
+        meta: { requiresAuth: true },
+      },
+      {
         path: 'my-articles',
         component: () => import('@/views/user/MyArticles.vue'),
         meta: { requiresAuth: true },
-      }
+      },
     ],
   },
 
@@ -63,6 +68,11 @@ const routes = [
       { path: '', component: () => import('@/views/admin/Dashboard.vue') },
       { path: 'articles', component: () => import('@/views/admin/Articles.vue') },
       { path: 'users', component: () => import('@/views/admin/Users.vue') },
+      {
+        path: 'profile',
+        component: () => import('@/views/admin/Profile.vue'),
+        meta: { requiresAuth: true },
+      },
     ],
   },
 

@@ -22,6 +22,29 @@ export const useAuthStore = defineStore('auth', {
       await this.fetchProfile()
     },
 
+    async register(payload) {
+      const body = {
+        email: (payload?.email || '').trim(),
+        password: payload?.password || '',
+        fullname: (payload?.fullname || '').trim(),
+      }
+
+      const res = await registerApi(body)
+
+      // kalau backend return token (recommended)
+      if (res.data?.token) {
+        this.setToken(res.data.token)
+        await this.fetchProfile()
+        return
+      }
+
+      // fallback: kalau register tidak return token, login ulang
+      await this.login({
+        email: body.email,
+        password: body.password,
+      })
+    },
+
     async fetchProfile() {
       if (!this.token) {
         this.initialized = true

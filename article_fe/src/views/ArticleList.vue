@@ -52,7 +52,7 @@ const nextPage = () => {
       </div>
 
       <!-- Loading State -->
-      <div v-if="articleStore.loading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div v-if="articleStore.loading.list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         <div v-for="n in 6" :key="n" class="group bg-white rounded-2xl overflow-hidden shadow-sm">
           <div class="h-48 bg-gradient-to-br from-gray-200 to-gray-300 animate-pulse"></div>
           <div class="p-6 space-y-3">

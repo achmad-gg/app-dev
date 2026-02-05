@@ -1,4 +1,14 @@
 import * as ArticleService from "../services/article.service.js";
+import { logActivity } from "../utils/activityLogger.js";
+
+const safeLog = async (payload) => {
+  try {
+    await logActivity(payload);
+  } catch (e) {
+    console.error("logActivity failed:", e?.message || e);
+    // jangan throw — biar request utama tetap sukses
+  }
+};
 
 /* =======================
    USER
@@ -21,6 +31,16 @@ export const create = async (req, res, next) => {
     res.status(201).json({
       message: "Article created, waiting for approval",
       article,
+    });
+    await safeLog({
+      user_id: req.user.id,
+      action: "CREATE_ARTICLE",
+      metadata: {
+        article_id: article.id,
+        title,
+        category_id,
+        status: article.status,
+      },
     });
   } catch (err) {
     next(err);
@@ -74,25 +94,44 @@ export const findApprovedById = async (req, res, next) => {
 export const update = async (req, res, next) => {
   try {
     const article = await ArticleService.getArticleById(req.params.id);
-
-    if (!article) {
-      return res.status(404).json({ message: "Article not found" });
-    }
+    if (!article) return res.status(404).json({ message: "Article not found" });
 
     if (article.user_id !== req.user.id && req.user.role !== "admin") {
       return res.status(403).json({ message: "Forbidden" });
     }
 
+    const { title, content, category_id } = req.body || {};
+
+    if (!title || !content || !category_id) {
+      return res.status(400).json({
+        message: "title, content, category_id are required",
+      });
+    }
+
     const updated = await ArticleService.updateArticle({
       id: req.params.id,
-      title: req.body.title,
-      content: req.body.content,
-      category_id: req.body.category_id,
+      title,
+      content,
+      category_id,
     });
 
-    res.json({
-      message: "Article updated",
-      article: updated,
+    res.json({ message: "Article updated", article: updated });
+    await safeLog({
+      user_id: req.user.id,
+      action: "UPDATE_ARTICLE",
+      metadata: {
+        article_id: Number(req.params.id),
+        before: {
+          title: article.title,
+          category_id: article.category_id,
+          status: article.status,
+        },
+        after: {
+          title,
+          category_id,
+          status: updated?.status ?? article.status,
+        },
+      },
     });
   } catch (err) {
     next(err);
@@ -115,6 +154,15 @@ export const remove = async (req, res, next) => {
     await ArticleService.deleteArticle(req.params.id);
 
     res.json({ message: "Article deleted" });
+    await safeLog({
+      user_id: req.user.id,
+      action: "DELETE_ARTICLE",
+      metadata: {
+        article_id: Number(req.params.id),
+        title: article.title,
+        status: article.status,
+      },
+    });
   } catch (err) {
     next(err);
   }
@@ -206,6 +254,31 @@ export const findMyArticles = async (req, res, next) => {
       total: result.total,
       data: result.data,
     });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const findByIdAuth = async (req, res, next) => {
+  try {
+    const article = await ArticleService.getArticleById(req.params.id);
+
+    if (!article) {
+      return res.status(404).json({ message: "Article not found" });
+    }
+
+    // Approved: boleh tampil
+    if (article.status === "approved") return res.json(article);
+
+    // Pending/Rejected: hanya owner atau admin/moderator
+    const isOwner = Number(article.user_id) === Number(req.user.id);
+    const isAdminOrMod = ["admin", "moderator"].includes(req.user.role);
+
+    if (!isOwner && !isAdminOrMod) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+
+    return res.json(article);
   } catch (err) {
     next(err);
   }

@@ -3,33 +3,29 @@ import * as CommentService from "../services/comment.service.js";
 
 export const create = async (req, res, next) => {
   try {
-    // 1. Extract content from req.body
-    const { content } = req.body;
+    const { content, parent_id } = req.body;
 
-    // 2. Validate BEFORE saving to database
     if (!content || content.length < 3) {
       return res.status(400).json({ message: "Comment too short" });
     }
 
-    // 3. Proceed with creation
+    const check = await ensureApproved(req.params.articleId);
+    if (!check.ok)
+      return res.status(check.code).json({ message: check.message });
+
     const comment = await CommentService.createComment({
-      content: content,
-      article_id: req.params.articleId,
+      content,
       user_id: req.user.id,
+      article_id: req.params.articleId,
+      parent_id: parent_id ?? null,
     });
 
-    res.status(201).json({
-      message: "Comment added",
-      comment,
-    });
+    res.status(201).json({ message: "Comment added", comment });
 
-    // 4. Log activity (non-blocking)
     await logActivity({
       user_id: req.user.id,
       action: "CREATE_COMMENT",
-      metadata: {
-        article_id: req.params.articleId,
-      },
+      metadata: { article_id: req.params.articleId },
     });
   } catch (err) {
     next(err);
@@ -38,6 +34,12 @@ export const create = async (req, res, next) => {
 
 export const findByArticle = async (req, res, next) => {
   try {
+    const status = await CommentService.getArticleStatus(req.params.articleId);
+
+    if (!status || status !== "approved") {
+      return res.status(404).json({ message: "Article not found" });
+    }
+
     const comments = await CommentService.getCommentsByArticle(
       req.params.articleId,
     );
@@ -95,4 +97,20 @@ export const approve = async (req, res, next) => {
   } catch (err) {
     next(err);
   }
+};
+
+const ensureApproved = async (articleId) => {
+  const status = await CommentService.getArticleStatus(articleId);
+
+  if (!status) {
+    return { ok: false, code: 404, message: "Article not found" };
+  }
+  if (status !== "approved") {
+    return {
+      ok: false,
+      code: 403,
+      message: "Comment hanya bisa untuk artikel yang sudah approved",
+    };
+  }
+  return { ok: true };
 };

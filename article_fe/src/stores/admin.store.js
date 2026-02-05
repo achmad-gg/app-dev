@@ -61,5 +61,15 @@ export const useAdminStore = defineStore('admin', {
       const res = await toggleUserStatusApi(user.id, !user.is_active)
       user.is_active = res.data.user.is_active
     },
+
+    async fetchActivity() {
+      this.loading = true 
+      try{
+        const res = await getActivityLogs()
+
+      } finally {
+
+      }
+    }
   },
 })

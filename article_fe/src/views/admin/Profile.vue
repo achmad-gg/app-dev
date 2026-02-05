@@ -1,10 +1,9 @@
-<!-- Profile.vue -->
+<!-- admin/Profile.vue -->
 <script setup>
-import { onMounted, ref, computed, watch } from 'vue'
-import { useProfileStore } from '../stores/profile.store'
-import { useAuthStore } from '../stores/auth.store'
+import { onMounted, ref, computed } from 'vue'
+import { useProfileStore } from '../../stores/profile.store'
+import { useAuthStore } from '../../stores/auth.store'
 import { useRouter, useRoute } from 'vue-router'
-import { changePasswordApi } from '@/api/profile.api'
 
 const profileStore = useProfileStore()
 const authStore = useAuthStore()
@@ -13,10 +12,7 @@ const route = useRoute()
 
 // Check if user is admin and came from admin panel
 const isFromAdmin = computed(() => {
-  return authStore.user?.role === 'admin' && (
-    route.query.from === 'admin' || 
-    document.referrer.includes('/admin')
-  )
+  return authStore.user?.role === 'admin'
 })
 
 const goBack = () => {
@@ -61,7 +57,6 @@ const onAvatarChange = async (e) => {
   uploadingAvatar.value = true
   try {
     await profileStore.uploadAvatar(file)
-    // Update auth store
     if (profileStore.profile?.avatar) {
       authStore.user = { ...authStore.user, avatar: profileStore.profile.avatar }
     }
@@ -75,7 +70,6 @@ const onAvatarChange = async (e) => {
 const deleteAvatar = async () => {
   if (!confirm('Are you sure you want to remove your avatar?')) return
   await profileStore.deleteAvatar()
-  // Update auth store
   authStore.user = { ...authStore.user, avatar: null }
 }
 
@@ -106,11 +100,10 @@ const saveProfile = async () => {
       fullname: editForm.value.fullname,
       email: editForm.value.email,
     })
-    // Update auth store
-    authStore.user = { 
-      ...authStore.user, 
+    authStore.user = {
+      ...authStore.user,
       fullname: editForm.value.fullname,
-      email: editForm.value.email 
+      email: editForm.value.email,
     }
     isEditingProfile.value = false
   } catch (error) {
@@ -191,14 +184,6 @@ const getRoleDisplay = (role) => {
   }
   return roles[role?.toLowerCase()] || roles.user
 }
-
-watch(
-  () => profileStore.profile,
-  (val) => {
-    console.log('PROFILE:', val)
-  },
-  { immediate: true },
-)
 </script>
 
 <template>
@@ -269,7 +254,7 @@ watch(
 
               <!-- Avatar Upload Overlay -->
               <div
-                class="absolute inset-0 ml-26.5 max-w-32.5 bg-black/50 rounded-2xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                class="absolute inset-0 ml-24 max-w-34 bg-black/50 rounded-2xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
               >
                 <div class="flex gap-2">
                   <button
@@ -420,8 +405,56 @@ watch(
           </div>
         </div>
 
-        <!-- Right Column - Articles -->
+        <!-- Right Column - Articles & Notifications -->
         <div class="lg:col-span-2 space-y-6">
+          <!-- Admin Notifications (only for admin) -->
+          <div v-if="isFromAdmin" class="bg-white rounded-2xl shadow-sm p-6">
+            <h3 class="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+                />
+              </svg>
+              Notifications
+            </h3>
+
+            <div class="space-y-3">
+              <!-- Sample Notifications -->
+              <div class="flex items-start gap-3 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                <svg class="w-5 h-5 text-blue-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                <div class="flex-1">
+                  <p class="text-sm font-medium text-gray-900">System Update</p>
+                  <p class="text-xs text-gray-600 mt-1">Your admin panel has been updated to the latest version.</p>
+                </div>
+              </div>
+
+              <div class="flex items-start gap-3 p-4 bg-green-50 border border-green-200 rounded-xl">
+                <svg class="w-5 h-5 text-green-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                <div class="flex-1">
+                  <p class="text-sm font-medium text-gray-900">Welcome Back!</p>
+                  <p class="text-xs text-gray-600 mt-1">You've successfully logged into the admin panel.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- My Articles Section -->
           <div class="bg-white rounded-2xl shadow-sm p-6">
             <div class="flex items-center justify-between mb-6">
@@ -477,7 +510,7 @@ watch(
               </div>
               <h4 class="text-lg font-semibold text-gray-900 mb-2">No articles yet</h4>
               <p class="text-gray-600 mb-6">
-                Start writing your first article and share your thoughts with the world.
+                Start writing your first article and share your thoughts.
               </p>
               <router-link
                 to="/write"
@@ -582,7 +615,6 @@ watch(
             </button>
           </div>
 
-          <!-- Error Alert -->
           <div
             v-if="editError"
             class="mb-4 bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3"
@@ -604,7 +636,6 @@ watch(
           </div>
 
           <form @submit.prevent="saveProfile" class="space-y-5">
-            <!-- Full Name -->
             <div>
               <label for="fullname" class="block text-sm font-medium text-gray-700 mb-2">
                 Full Name
@@ -619,7 +650,6 @@ watch(
               />
             </div>
 
-            <!-- Email -->
             <div>
               <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
                 Email Address
@@ -634,7 +664,6 @@ watch(
               />
             </div>
 
-            <!-- Buttons -->
             <div class="flex gap-3 pt-2">
               <button
                 type="button"
@@ -683,7 +712,6 @@ watch(
             </button>
           </div>
 
-          <!-- Success Alert -->
           <div
             v-if="passwordSuccess"
             class="mb-4 bg-green-50 border border-green-200 rounded-xl p-4 flex items-start gap-3"
@@ -704,7 +732,6 @@ watch(
             <p class="text-sm text-green-800">Password changed successfully!</p>
           </div>
 
-          <!-- Error Alert -->
           <div
             v-if="passwordError"
             class="mb-4 bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3"
@@ -726,7 +753,6 @@ watch(
           </div>
 
           <form @submit.prevent="savePassword" class="space-y-5">
-            <!-- Current Password -->
             <div>
               <label for="old_password" class="block text-sm font-medium text-gray-700 mb-2">
                 Current Password
@@ -741,7 +767,6 @@ watch(
               />
             </div>
 
-            <!-- New Password -->
             <div>
               <label for="new_password" class="block text-sm font-medium text-gray-700 mb-2">
                 New Password
@@ -757,7 +782,6 @@ watch(
               <p class="mt-1.5 text-xs text-gray-500">Must be at least 6 characters</p>
             </div>
 
-            <!-- Confirm Password -->
             <div>
               <label for="confirm_password" class="block text-sm font-medium text-gray-700 mb-2">
                 Confirm New Password
@@ -772,7 +796,6 @@ watch(
               />
             </div>
 
-            <!-- Buttons -->
             <div class="flex gap-3 pt-2">
               <button
                 type="button"

@@ -9,14 +9,26 @@ export const useCommentStore = defineStore('comment', {
 
   actions: {
     async fetchComments(articleId) {
-      const res = await fetchCommentsApi(articleId)
-      this.comments = res.data
-    },
-
-    async addComment(articleId, content) {
       this.loading = true
       try {
-        await createCommentApi(articleId, { content })
+        const res = await fetchCommentsApi(articleId)
+        this.comments = res.data || []
+      } catch (err) {
+        const code = err?.response?.status
+        if (code === 404) {
+          this.comments = []
+          return
+        }
+        throw err
+      } finally {
+        this.loading = false
+      }
+    },
+
+    async addComment(articleId, content, parentId = null) {
+      this.loading = true
+      try {
+        await createCommentApi(articleId, { content, parent_id: parentId })
         await this.fetchComments(articleId)
       } finally {
         this.loading = false

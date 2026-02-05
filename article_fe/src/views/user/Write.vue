@@ -199,9 +199,18 @@ const submit = async () => {
   submitting.value = true
   try {
     if (isEditMode.value) {
-      await articleStore.updateArticle(articleId.value, form.value)
+      await articleStore.updateArticle(articleId.value, {
+        title: form.value.title,
+        content: form.value.content,
+        category_id: form.value.category_id,
+      })
     } else {
-      await articleStore.createArticle(form.value)
+      await articleStore.createArticle({
+        title: form.value.title,
+        content: form.value.content,
+        category_id: form.value.category_id,
+      })
+
       form.value = { title: '', content: '', category_id: null }
     }
 

@@ -1,6 +1,6 @@
 // src/stores/like.store.js
 import { defineStore } from 'pinia'
-import api from '@/api/axios'
+import { getLikeCountApi, getLikeStatusApi, likeApi, unlikeApi } from '@/api/like.api'
 
 export const useLikeStore = defineStore('like', {
   state: () => ({
@@ -11,23 +11,34 @@ export const useLikeStore = defineStore('like', {
   }),
 
   actions: {
-    async fetchStatus(articleId) {
-      try {
-        const { data } = await api.get(`/likes/${articleId}/status`)
-        this.liked = data.liked
-      } catch {
-        this.liked = false
-      }
-    },
-    async fetchInitial(articleId) {
+    async fetchInitial(articleId, { isAuthenticated } = { isAuthenticated: false }) {
       this.fetching = true
       try {
-        const [{ data: count }, { data: status }] = await Promise.all([
-          api.get(`/likes/${articleId}/count`),
-          api.get(`/likes/${articleId}/status`),
-        ])
-        this.count = count.total
-        this.liked = status.liked
+        // count selalu public
+        const promises = [getLikeCountApi(articleId)]
+
+        // status hanya kalau login (biar nggak spam 403 di console)
+        if (isAuthenticated) promises.push(getLikeStatusApi(articleId))
+
+        const results = await Promise.allSettled(promises)
+
+        // count
+        if (results[0].status === 'fulfilled') {
+          this.count = Number(results[0].value.data?.total ?? 0)
+        } else {
+          const code = results[0].reason?.response?.status
+          if (code === 404) this.count = 0
+          else throw results[0].reason
+        }
+
+        // status (opsional)
+        if (isAuthenticated) {
+          const r = results[1]
+          if (r?.status === 'fulfilled') this.liked = !!r.value.data?.liked
+          else this.liked = false
+        } else {
+          this.liked = false
+        }
       } finally {
         this.fetching = false
       }
@@ -37,7 +48,7 @@ export const useLikeStore = defineStore('like', {
       if (this.toggling) return
       this.toggling = true
       try {
-        await api.post(`/likes/${articleId}`)
+        await likeApi(articleId)
         this.liked = true
         this.count++
       } finally {
@@ -49,7 +60,7 @@ export const useLikeStore = defineStore('like', {
       if (this.toggling) return
       this.toggling = true
       try {
-        await api.delete(`/likes/${articleId}`)
+        await unlikeApi(articleId)
         this.liked = false
         this.count = Math.max(0, this.count - 1)
       } finally {
@@ -58,11 +69,8 @@ export const useLikeStore = defineStore('like', {
     },
 
     async toggle(articleId) {
-      if (this.liked) {
-        await this.unlike(articleId)
-      } else {
-        await this.like(articleId)
-      }
+      if (this.liked) return this.unlike(articleId)
+      return this.like(articleId)
     },
   },
 })

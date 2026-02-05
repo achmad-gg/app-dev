@@ -12,12 +12,14 @@ export const getDashboardStats = async (req, res, next) => {
 
 export const getAllUsers = async (req, res, next) => {
   try {
-    const users = await AdminService.getUsers();
-    res.json(users);
+    const currentUserId = req.user.id
+    const users = await AdminService.getUsers(currentUserId)
+    res.json(users)
   } catch (err) {
-    next(err);
+    next(err)
   }
-};
+}
+
 
 export const getPendingArticles = async (req, res, next) => {
   try {

@@ -5,13 +5,12 @@ import { useAuthStore } from '../stores/auth.store'
 
 import GuestNavbar from '../components/navbar/GuestNavbar.vue'
 import UserNavbar from '../components/navbar/UserNavbar.vue'
-import AdminNavbar from '../components/navbar/AdminNavbar.vue'
 import Footer from '../components/Footer.vue'
 
 const auth = useAuthStore()
 const route = useRoute()
 
-const isAuthPage = computed(() => route.path.startsWith('/auth'))
+// const isAuthPage = computed(() => route.path.startsWith('/auth'))
 
 const navbarComponent = computed(() => {
   if (route.path.startsWith('/auth')) return null

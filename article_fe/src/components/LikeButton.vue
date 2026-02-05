@@ -1,21 +1,22 @@
 <script setup>
 import { watch } from 'vue'
 import { useLikeStore } from '../stores/like.store'
+import { useAuthStore } from '@/stores/auth.store'
 
 const props = defineProps({
-  articleId: {
-    type: [Number, String],
-    required: true,
-  },
+  articleId: { type: [Number, String], required: true },
+  disabled: { type: Boolean, default: false }, // ✅
 })
 
+const auth = useAuthStore()
 const likeStore = useLikeStore()
 
 const handleToggle = async () => {
+  if (props.disabled) return // ✅ stop beneran
+  if (!auth.isAuthenticated) return
   await likeStore.toggle(props.articleId)
 }
 
-// Format number
 const formatCount = (n) => {
   if (!Number.isFinite(n)) return '0'
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
@@ -23,20 +24,19 @@ const formatCount = (n) => {
   return String(n)
 }
 
-// Fetch ulang jika article berubah
 watch(
   () => props.articleId,
   (id) => {
-    if (id) likeStore.fetchInitial(id)
+    if (id) likeStore.fetchInitial(id, { isAuthenticated: auth.isAuthenticated })
   },
-  { immediate: true }
+  { immediate: true },
 )
 </script>
 
 <template>
   <button
     @click="handleToggle"
-    :disabled="likeStore.fetching || likeStore.toggling"
+    :disabled="props.disabled || likeStore.fetching || likeStore.toggling"
     class="group inline-flex items-center gap-3 px-6 py-3 bg-white border-2 rounded-xl font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
     :class="[
       likeStore.liked
@@ -44,7 +44,7 @@ watch(
         : 'border-gray-200 text-gray-700 hover:border-red-300 hover:bg-red-50',
     ]"
   >
-    <!-- Heart Icon -->
+    <!-- icon + count sama seperti punyamu -->
     <div class="relative w-6 h-6">
       <svg
         class="absolute inset-0 w-6 h-6 transition-all duration-300"
@@ -63,7 +63,6 @@ watch(
         />
       </svg>
 
-      <!-- Spinner -->
       <svg
         v-if="likeStore.toggling"
         class="absolute inset-0 w-6 h-6 animate-spin text-red-500"
@@ -79,11 +78,8 @@ watch(
       </svg>
     </div>
 
-    <!-- Count -->
     <div class="flex flex-col items-start">
-      <span class="text-lg font-bold leading-none">
-        {{ formatCount(likeStore.count) }}
-      </span>
+      <span class="text-lg font-bold leading-none">{{ formatCount(likeStore.count) }}</span>
       <span class="text-xs opacity-75 leading-none mt-0.5">
         {{ likeStore.count === 1 ? 'Like' : 'Likes' }}
       </span>

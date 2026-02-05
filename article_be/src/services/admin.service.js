@@ -25,15 +25,20 @@ export const getStats = async () => {
   }
 }
 
-export const getUsers = async () => {
-  const { rows } = await pool.query(`
+export const getUsers = async (currentUserId) => {
+  const { rows } = await pool.query(
+    `
     SELECT u.id, u.email, u.is_active, r.name AS role
     FROM users u
     JOIN roles r ON r.id = u.role_id
+    WHERE u.id <> $1
     ORDER BY u.created_at DESC
-  `)
+    `,
+    [currentUserId]
+  )
   return rows
 }
+
 
 export const getPendingArticles = async () => {
   const { rows } = await pool.query(`
