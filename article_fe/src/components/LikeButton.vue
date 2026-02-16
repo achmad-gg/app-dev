@@ -3,17 +3,29 @@ import { watch } from 'vue'
 import { useLikeStore } from '../stores/like.store'
 import { useAuthStore } from '@/stores/auth.store'
 
+const emit = defineEmits(['login-required'])
+
 const props = defineProps({
   articleId: { type: [Number, String], required: true },
-  disabled: { type: Boolean, default: false }, // ✅
+  disabled: { type: Boolean, default: false }, // ini untuk kasus artikel belum approved, dll
 })
 
 const auth = useAuthStore()
 const likeStore = useLikeStore()
 
 const handleToggle = async () => {
-  if (props.disabled) return // ✅ stop beneran
-  if (!auth.isAuthenticated) return
+  // kalau lagi proses fetch/toggle, skip
+  if (likeStore.fetching || likeStore.toggling) return
+
+  // kalau user belum login → munculkan modal (emit)
+  if (!auth.isAuthenticated) {
+    emit('login-required')
+    return
+  }
+
+  // kalau memang disabled karena alasan lain (misal status bukan approved)
+  if (props.disabled) return
+
   await likeStore.toggle(props.articleId)
 }
 
@@ -36,7 +48,7 @@ watch(
 <template>
   <button
     @click="handleToggle"
-    :disabled="props.disabled || likeStore.fetching || likeStore.toggling"
+    :disabled="likeStore.fetching || likeStore.toggling"
     class="group inline-flex items-center gap-3 px-6 py-3 bg-white border-2 rounded-xl font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
     :class="[
       likeStore.liked

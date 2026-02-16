@@ -44,12 +44,12 @@ const routes = [
       {
         path: 'write',
         component: () => import('@/views/user/Write.vue'),
-        meta: { requiresAuth: true },
+        meta: { requiresAuth: true, requiresActive: true },
       },
       {
         path: 'write/:id',
         component: () => import('@/views/user/Write.vue'),
-        meta: { requiresAuth: true },
+        meta: { requiresAuth: true, requiresActive: true },
       },
       {
         path: 'my-articles',
@@ -73,6 +73,15 @@ const routes = [
         component: () => import('@/views/admin/Profile.vue'),
         meta: { requiresAuth: true },
       },
+      {
+        path: 'articles/detail/:id',
+        component: () => import('@/views/admin/ArticleDetail.vue'),
+        meta: { requiresAuth: true },
+      },
+      {
+        path: 'categories',
+        component: () => import('@/views/admin/Category.vue'),
+      },
     ],
   },
 
@@ -92,16 +101,26 @@ router.beforeEach(async (to) => {
     await auth.initAuth()
   }
 
+  // ===== REQUIRE LOGIN =====
   if (to.meta.requiresAuth && !auth.isAuthenticated) {
     return '/auth/login'
   }
 
+  // ===== GUEST ONLY =====
   if (to.meta.guestOnly && auth.isAuthenticated) {
     return '/'
   }
 
+  // ===== ROLE CHECK =====
   if (to.meta.roles && !to.meta.roles.includes(auth.role)) {
     return '/'
+  }
+
+  // ===== ACTIVE ACCOUNT CHECK =====
+  if (to.meta.requiresActive) {
+    if (auth.user?.status !== 'active') {
+      return '/profile'
+    }
   }
 })
 

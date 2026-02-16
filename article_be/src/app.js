@@ -12,6 +12,9 @@ import likeRoutes from "./routes/like.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
 import activityRoutes from './routes/activity.routes.js'
 import profileRoutes from "./routes/profile.routes.js";
+import notificationRoutes from './routes/notification.routes.js'
+import userRoutes from './routes/user.routes.js'
+import activationRoutes from './routes/activation.routes.js'
 
 const app = express();
 
@@ -61,6 +64,10 @@ app.use("/api/admin", adminRoutes);
 app.use('/api/activity', activityRoutes)
 app.use("/api/profile", profileRoutes);
 app.use("/api/uploads", express.static("uploads"));
+app.use('/api/notifications', notificationRoutes)
+app.use('/api/users', userRoutes)
+app.use('/api/activation', activationRoutes)
+
 /* ========================
    404 HANDLER
 ======================== */

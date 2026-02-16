@@ -9,9 +9,16 @@ export const create = async (req, res, next) => {
       return res.status(400).json({ message: "Comment too short" });
     }
 
+    if (!content || !content.trim()) {
+      return res.status(400).json({
+        message: "Comment cannot be empty",
+      });
+    }
+
     const check = await ensureApproved(req.params.articleId);
-    if (!check.ok)
+    if (!check.ok) {
       return res.status(check.code).json({ message: check.message });
+    }
 
     const comment = await CommentService.createComment({
       content,
@@ -21,12 +28,6 @@ export const create = async (req, res, next) => {
     });
 
     res.status(201).json({ message: "Comment added", comment });
-
-    await logActivity({
-      user_id: req.user.id,
-      action: "CREATE_COMMENT",
-      metadata: { article_id: req.params.articleId },
-    });
   } catch (err) {
     next(err);
   }
@@ -43,33 +44,31 @@ export const findByArticle = async (req, res, next) => {
     const comments = await CommentService.getCommentsByArticle(
       req.params.articleId,
     );
+
     res.json(comments);
   } catch (err) {
     next(err);
   }
 };
 
+/**
+ * DELETE COMMENT
+ * - user bisa delete comment sendiri
+ * - admin bisa delete comment siapa pun
+ * - notifikasi dikirim kalau admin yang delete
+ */
 export const remove = async (req, res, next) => {
   try {
-    const comment = await CommentService.getCommentById(req.params.id);
+    const commentId = req.params.id;
+    const actor = req.user; // { id, role }
 
-    if (!comment) {
-      return res.status(404).json({ message: "Comment not found" });
-    }
-
-    if (comment.user_id !== req.user.id && req.user.role !== "admin") {
-      return res.status(403).json({ message: "Forbidden" });
-    }
-
-    await CommentService.deleteComment(req.params.id);
-    res.json({ message: "Comment deleted" });
-    await logActivity({
-      user_id: req.user.id,
-      action: "DELETE_COMMENT",
-      metadata: {
-        comment_id: req.params.id,
-      },
+    await CommentService.deleteCommentWithPermission({
+      commentId,
+      actorId: actor.id,
+      actorRole: actor.role,
     });
+
+    res.json({ message: "Comment deleted" });
   } catch (err) {
     next(err);
   }
@@ -86,19 +85,14 @@ export const approve = async (req, res, next) => {
       message: "Comment moderation updated",
       comment,
     });
-    await logActivity({
-      user_id: req.user.id,
-      action: "MODERATE_COMMENT",
-      metadata: {
-        comment_id: comment.id,
-        is_approved: comment.is_approved,
-      },
-    });
   } catch (err) {
     next(err);
   }
 };
 
+// =====================
+// Helper
+// =====================
 const ensureApproved = async (articleId) => {
   const status = await CommentService.getArticleStatus(articleId);
 

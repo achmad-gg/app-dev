@@ -15,3 +15,7 @@ export const fetchArticleDetailPublicApi = (id) => {
 export const createArticleApi = (payload) => {
   return api.post('/articles/create', payload)
 }
+
+export const updateArticleApi = (id, payload) => {
+  return api.put(`/articles/${id}`, payload)
+}

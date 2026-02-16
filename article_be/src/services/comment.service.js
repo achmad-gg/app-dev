@@ -1,5 +1,7 @@
 // src/services/comment.service.js
 import { pool } from "../config/db.js";
+import { createNotification } from "./notification.service.js";
+
 
 export const createComment = async ({
   content,
@@ -23,13 +25,16 @@ export const createComment = async ({
 
 export const getCommentsByArticle = async (article_id) => {
   const query = `
-   SELECT c.id, c.content, c.created_at, c.parent_id,
-       u.fullname AS name
+   SELECT c.id, c.content, c.created_at,c.user_id, c.parent_id,
+       u.fullname AS name,
+       u.avatar,
+       r.name AS user_role
 FROM comments c
 JOIN users u ON u.id = c.user_id
+JOIN roles r ON r.id = u.role_id
 WHERE c.article_id = $1
   AND c.is_approved = true
-ORDER BY c.created_at ASC;
+ORDER BY c.created_at DESC;
 
   `;
   const { rows } = await pool.query(query, [article_id]);
@@ -65,3 +70,39 @@ export const getArticleStatus = async (article_id) => {
   );
   return rows[0]?.status || null;
 };
+
+export async function deleteCommentWithPermission({
+  commentId,
+  actorId,
+  actorRole,
+}) {
+  const comment = await getCommentById(commentId);
+  if (!comment) {
+    throw new Error("Comment not found");
+  }
+
+  const isOwner = String(comment.user_id) === String(actorId);
+  const isAdmin = actorRole === "admin";
+
+  if (!isOwner && !isAdmin) {
+    const err = new Error("Forbidden");
+    err.status = 403;
+    throw err;
+  }
+
+  await deleteComment(commentId);
+
+  // admin delete → notif user
+  if (isAdmin && !isOwner) {
+    await createNotification({
+      user_id: comment.user_id,
+      type: "comment_deleted",
+      message: "Komentar kamu dihapus oleh admin.",
+      meta: {
+        comment_id: comment.id,
+        article_id: comment.article_id,
+        deleted_by: actorId,
+      },
+    });
+  }
+}

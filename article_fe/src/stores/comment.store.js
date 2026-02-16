@@ -1,5 +1,9 @@
 import { defineStore } from 'pinia'
-import { fetchCommentsApi, createCommentApi } from '../api/comment.api'
+import {
+  fetchCommentsApi,
+  createCommentApi,
+  deleteCommentApi,
+} from '../api/comment.api'
 
 export const useCommentStore = defineStore('comment', {
   state: () => ({
@@ -14,8 +18,7 @@ export const useCommentStore = defineStore('comment', {
         const res = await fetchCommentsApi(articleId)
         this.comments = res.data || []
       } catch (err) {
-        const code = err?.response?.status
-        if (code === 404) {
+        if (err?.response?.status === 404) {
           this.comments = []
           return
         }
@@ -28,7 +31,21 @@ export const useCommentStore = defineStore('comment', {
     async addComment(articleId, content, parentId = null) {
       this.loading = true
       try {
-        await createCommentApi(articleId, { content, parent_id: parentId })
+        await createCommentApi(articleId, {
+          content,
+          parent_id: parentId,
+        })
+        await this.fetchComments(articleId)
+      } finally {
+        this.loading = false
+      }
+    },
+
+    async deleteComment(id, articleId) {
+      this.loading = true
+      try {
+        await deleteCommentApi(id)
+        // opsi A: hard delete + cascade → refetch
         await this.fetchComments(articleId)
       } finally {
         this.loading = false

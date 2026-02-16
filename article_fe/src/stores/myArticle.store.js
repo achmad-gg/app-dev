@@ -6,30 +6,23 @@ import {
   deleteArticleApi,
 } from '@/api/article.user.api'
 
+const toNum = (v) => (typeof v === 'string' ? Number(v) : v)
+const toMsg = (err) => err?.response?.data?.message || err?.message || 'Network / server error'
+
 export const useMyArticleStore = defineStore('my-article', {
   state: () => ({
     articles: [],
-    pagination: {
-      page: 1,
-      limit: 10,
-      total: 0,
-    },
+    pagination: { page: 1, limit: 10, total: 0 },
     filters: {
       status: null, // draft | published | archived
     },
-    loading: {
-      list: false,
-      create: false,
-      update: false,
-      delete: false,
-    },
+    loading: { list: false, create: false, update: false, delete: false },
     error: null,
   }),
 
   getters: {
-    isEmpty: (state) => !state.loading.list && state.articles.length === 0,
-
-    totalPages: (state) => Math.ceil(state.pagination.total / state.pagination.limit),
+    isEmpty: (s) => !s.loading.list && s.articles.length === 0,
+    totalPages: (s) => Math.ceil(s.pagination.total / s.pagination.limit),
   },
 
   actions: {
@@ -37,7 +30,6 @@ export const useMyArticleStore = defineStore('my-article', {
       this.loading.list = true
       this.error = null
 
-      // merge state + override (penting untuk pagination/filter)
       const page = overrides.page ?? this.pagination.page
       const status = overrides.status ?? this.filters.status
 
@@ -49,14 +41,14 @@ export const useMyArticleStore = defineStore('my-article', {
         })
 
         this.articles = res.data?.data || []
-        this.pagination.total = res.data?.total || 0
+        this.pagination.total = Number(res.data?.total || 0)
         this.pagination.page = page
         this.filters.status = status
       } catch (err) {
-        this.error = err
+        this.error = toMsg(err)
         this.articles = []
         this.pagination.total = 0
-        console.error(err)
+        throw err
       } finally {
         this.loading.list = false
       }
@@ -65,22 +57,17 @@ export const useMyArticleStore = defineStore('my-article', {
     async createArticle(payload) {
       this.loading.create = true
       this.error = null
-
       try {
         const res = await createArticleApi(payload)
 
-        /**
-         * Jangan refetch membabi buta.
-         * Optimistic prepend untuk UX cepat.
-         */
+        // optimistic prepend (seperti punyamu)
         if (this.pagination.page === 1) {
           this.articles.unshift(res.data)
           this.pagination.total++
         }
-
         return res.data
       } catch (err) {
-        this.error = err
+        this.error = toMsg(err)
         throw err
       } finally {
         this.loading.create = false
@@ -91,28 +78,25 @@ export const useMyArticleStore = defineStore('my-article', {
       this.loading.update = true
       this.error = null
 
-      // ambil snapshot untuk rollback jika gagal
+      const nid = toNum(id)
       const snapshot = [...this.articles]
-      const index = this.articles.findIndex((a) => a.id === id)
+      const index = this.articles.findIndex((a) => toNum(a.id) === nid)
 
       if (index === -1) {
         this.loading.update = false
         throw new Error('Article not found in local state')
       }
 
-      // Optimistic update
+      // optimistic update
       this.articles[index] = { ...this.articles[index], ...payload }
 
       try {
-        const res = await updateArticleApi(id, payload)
-
-        // pastikan state sinkron dengan data dari server
+        const res = await updateArticleApi(nid, payload)
         this.articles[index] = res.data
         return res.data
       } catch (err) {
-        // rollback
         this.articles = snapshot
-        this.error = 'Failed to update article. Please try again.'
+        this.error = toMsg(err)
         throw err
       } finally {
         this.loading.update = false
@@ -123,26 +107,27 @@ export const useMyArticleStore = defineStore('my-article', {
       this.loading.delete = true
       this.error = null
 
+      const nid = toNum(id)
       const snapshot = [...this.articles]
-      // Optimistic update
-      this.articles = this.articles.filter((a) => a.id !== id)
-      this.pagination.total--
+
+      // optimistic remove
+      this.articles = this.articles.filter((a) => toNum(a.id) !== nid)
+      this.pagination.total = Math.max(0, this.pagination.total - 1)
 
       try {
-        await deleteArticleApi(id)
+        await deleteArticleApi(nid)
 
+        // refill UI kalau list jadi kosong / terlalu sedikit (logika kamu tetap dipertahankan)
         if (this.articles.length === 0 && this.pagination.total > 0) {
           const prevPage = Math.max(1, this.pagination.page - 1)
           await this.fetchMyArticles({ page: prevPage })
         } else if (this.articles.length < this.pagination.limit / 2) {
-          // Opsional: refetch jika data di layar terlalu sedikit setelah delete
           await this.fetchMyArticles({ page: this.pagination.page })
         }
       } catch (err) {
-        // Rollback
         this.articles = snapshot
         this.pagination.total++
-        this.error = 'Failed to delete article. Please try again.'
+        this.error = toMsg(err)
         throw err
       } finally {
         this.loading.delete = false
@@ -162,7 +147,8 @@ export const useMyArticleStore = defineStore('my-article', {
       this.articles = []
       this.pagination = { page: 1, limit: 10, total: 0 }
       this.filters = { status: null }
-      this.loading = { list: false, create: false }
+      // FIX: jangan sampai update/delete hilang (punyamu sebelumnya cuma list/create) :contentReference[oaicite:4]{index=4}
+      this.loading = { list: false, create: false, update: false, delete: false }
       this.error = null
     },
   },

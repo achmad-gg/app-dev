@@ -15,7 +15,7 @@ const route = useRoute()
 const navbarComponent = computed(() => {
   if (route.path.startsWith('/auth')) return null
   if (!auth.isAuthenticated) return GuestNavbar
-  if (auth.role === 'admin') return AdminNavbar
+  // if (auth.role === 'admin') return AdminNavbar
   return UserNavbar
 })
 </script>

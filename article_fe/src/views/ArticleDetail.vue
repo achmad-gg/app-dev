@@ -1,5 +1,5 @@
 <script setup>
-import { onUnmounted, computed, watch } from 'vue'
+import { onUnmounted, computed, watch, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useArticleStore } from '../stores/article.store'
 import { useAuthStore } from '../stores/auth.store'
@@ -8,17 +8,38 @@ import { useCommentStore } from '@/stores/comment.store'
 import LikeButton from '../components/LikeButton.vue'
 import CommentList from '../components/CommentList.vue'
 
+const API_BASE_URL = 'http://localhost:3000'
+
+const coverImageUrl = computed(() => {
+  const img = article.value?.cover_image
+  if (!img) return null
+
+  if (img.startsWith('http')) return img
+
+  if (img.startsWith('/uploads')) {
+    return `${API_BASE_URL}/api${img}`
+  }
+
+  return img
+})
+
 const route = useRoute()
 const articleStore = useArticleStore()
 const auth = useAuthStore()
 const commentStore = useCommentStore()
 
 const article = computed(() => articleStore.articleDetail)
+const isLoading = computed(() => articleStore.loading.detail)
+const hasError = ref(false)
 
-// normalize status biar aman (kadang backend kirim "Approved", "APPROVED", dll)
 const articleStatus = computed(() => (article.value?.status || '').toLowerCase())
 
-// ✅ boleh interaksi hanya jika login + approved
+const showLoginModal = ref(false)
+
+const handleLikeGuarded = () => {
+  showLoginModal.value = true
+}
+
 const canInteract = computed(() => {
   return auth.isAuthenticated && articleStatus.value === 'approved'
 })
@@ -37,15 +58,29 @@ const formatDate = (dateString) => {
   return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
 }
 
-// ✅ cukup watch route id saja (hindari fetch double dari onMounted + watch)
 watch(
   () => route.params.id,
   async (id) => {
-    const a = await articleStore.fetchArticleDetail(id)
-    if (a?.id) await commentStore.fetchComments(a.id)
+    if (!id) return
+
+    hasError.value = false
+
+    try {
+      const a = await articleStore.fetchArticleDetail(id, { isPublic: true })
+
+      if (a?.id) {
+        await commentStore.fetchComments(a.id)
+      } else {
+        hasError.value = true
+      }
+    } catch (error) {
+      console.error('Failed to load article:', error)
+      hasError.value = true
+    }
   },
   { immediate: true },
 )
+
 
 onUnmounted(() => {
   articleStore.clearDetail()
@@ -56,10 +91,7 @@ onUnmounted(() => {
   <div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
       <!-- Skeleton Loader -->
-      <div
-        v-if="articleStore.loading.detail"
-        class="bg-white rounded-2xl shadow-sm overflow-hidden"
-      >
+      <div v-if="isLoading" class="bg-white rounded-2xl shadow-sm overflow-hidden">
         <div class="animate-pulse">
           <div class="h-64 sm:h-80 bg-gradient-to-br from-gray-200 to-gray-300"></div>
           <div class="p-6 sm:p-8 lg:p-12 space-y-6">
@@ -91,34 +123,46 @@ onUnmounted(() => {
 
       <!-- Article Content -->
       <article
-        v-else-if="articleStore.articleDetail"
+        v-else-if="!isLoading && article && !hasError"
         class="bg-white rounded-2xl shadow-sm overflow-hidden"
       >
-        <div
-          class="h-64 sm:h-80 bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center"
-        >
-          <svg
-            class="w-20 h-20 text-blue-200"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
+        <!-- Cover Image -->
+        <div class="h-64 sm:h-80 bg-gray-100 overflow-hidden">
+          <img
+            v-if="coverImageUrl"
+            :src="coverImageUrl"
+            alt="Article cover"
+            class="w-full h-full object-cover"
+            loading="lazy"
+          />
+
+          <div
+            v-else
+            class="w-full h-full bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center"
           >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-            />
-          </svg>
+            <svg
+              class="w-20 h-20 text-blue-200"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              />
+            </svg>
+          </div>
         </div>
 
         <div class="p-6 sm:p-8 lg:p-12">
-          <!-- Meta -->
+          <!-- Meta Information -->
           <div class="flex flex-wrap items-center gap-3 text-sm mb-6">
             <span
               class="inline-flex items-center px-3 py-1 bg-blue-50 text-blue-700 font-medium rounded-full"
             >
-              {{ articleStore.articleDetail.category_name || articleStore.articleDetail.category }}
+              {{ article.category_name || article.category }}
             </span>
 
             <span class="text-gray-300">•</span>
@@ -132,69 +176,59 @@ onUnmounted(() => {
                   d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
                 />
               </svg>
-              <span>{{
-                articleStore.articleDetail.fullname || articleStore.articleDetail.author
-              }}</span>
+              <span>{{ article.fullname || article.author }}</span>
             </div>
 
-            <span class="text-gray-300" v-if="articleStore.articleDetail.created_at">•</span>
-            <div
-              class="flex items-center gap-2 text-gray-600"
-              v-if="articleStore.articleDetail.created_at"
-            >
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                />
-              </svg>
-              <span>{{ formatDate(articleStore.articleDetail.created_at) }}</span>
-            </div>
-
-            <!-- ✅ Status badge -->
-            <span
-              class="ml-auto inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold"
-              :class="
-                articleStore.articleDetail.status === 'approved'
-                  ? 'bg-green-50 text-green-700'
-                  : articleStore.articleDetail.status === 'pending'
-                    ? 'bg-yellow-50 text-yellow-700'
-                    : 'bg-red-50 text-red-700'
-              "
-            >
-              {{ articleStore.articleDetail.status }}
-            </span>
+            <template v-if="article.created_at">
+              <span class="text-gray-300">•</span>
+              <div class="flex items-center gap-2 text-gray-600">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                  />
+                </svg>
+                <span>{{ formatDate(article.created_at) }}</span>
+              </div>
+            </template>
           </div>
 
+          <!-- Title -->
           <h1 class="text-2xl sm:text-4xl lg:text-4xl font-bold text-gray-900 leading-tight mb-8">
-            {{ articleStore.articleDetail.title }}
+            {{ article.title }}
           </h1>
 
+          <!-- Content -->
           <div class="prose prose-lg prose-gray max-w-none mb-12">
-            <div class="text-gray-700 leading-relaxed whitespace-pre-line text-base sm:text-lg">
-              {{ articleStore.articleDetail.content }}
-            </div>
+            <div
+              class="text-gray-700 leading-relaxed text-base sm:text-lg"
+              v-html="article.content"
+            ></div>
           </div>
 
           <div class="border-t border-gray-200"></div>
 
           <!-- Actions -->
           <div class="pt-8 space-y-8">
+            <!-- Like Button -->
             <div class="flex items-center gap-4">
               <LikeButton
-                :article-id="articleStore.articleDetail.id"
-                :status="articleStore.articleDetail.status"
-                :show-reason="false"
+                :article-id="article.id"
+                :status="article.status"
+                :can-interact="canInteract"
+                :is-authenticated="auth.isAuthenticated"
+                @login-required="handleLikeGuarded"
               />
             </div>
 
+            <!-- Interaction Warning -->
             <p v-if="!canInteract && interactDisabledReason" class="text-sm text-gray-500">
               {{ interactDisabledReason }}
             </p>
 
-            <!-- Comments -->
+            <!-- Comments Section -->
             <div class="bg-gray-50 rounded-2xl p-6">
               <h2 class="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -208,10 +242,10 @@ onUnmounted(() => {
                 Comments
               </h2>
 
-              <!-- ✅ disable wrapper ketika tidak boleh interaksi -->
+              <!-- Comments List -->
               <div :class="!canInteract ? 'opacity-60 pointer-events-none' : ''">
-                <CommentList v-if="canInteract" :articleId="articleStore.articleDetail.id" />
-                <p v-else class="text-sm text-gray-500">
+                <CommentList :articleId="article.id" :readonly="!canInteract" />
+                <p v-if="!canInteract && interactDisabledReason" class="text-sm text-gray-500 mt-4">
                   {{ interactDisabledReason }}
                 </p>
               </div>
@@ -220,8 +254,11 @@ onUnmounted(() => {
         </div>
       </article>
 
-      <!-- Error -->
-      <div v-else class="flex flex-col items-center justify-center py-16 sm:py-24">
+      <!-- Error State - Article Not Found -->
+      <div
+        v-else-if="!isLoading && (hasError || !article)"
+        class="flex flex-col items-center justify-center py-16 sm:py-24"
+      >
         <div
           class="w-24 h-24 sm:w-32 sm:h-32 bg-red-100 rounded-full flex items-center justify-center mb-6"
         >
@@ -244,7 +281,7 @@ onUnmounted(() => {
           The article you're looking for doesn't exist or has been removed.
         </p>
         <router-link
-          to="/"
+          to="/articles"
           class="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-medium rounded-xl shadow-sm hover:bg-blue-700 transition-colors"
         >
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -258,22 +295,99 @@ onUnmounted(() => {
           Back to Articles
         </router-link>
       </div>
+
+      <!-- Login Modal -->
+      <Transition
+        enter-active-class="transition ease-out duration-200"
+        enter-from-class="transform opacity-0 scale-95"
+        enter-to-class="transform opacity-100 scale-100"
+        leave-active-class="transition ease-in duration-150"
+        leave-from-class="transform opacity-100 scale-100"
+        leave-to-class="transform opacity-0 scale-95"
+      >
+        <div
+          v-if="showLoginModal"
+          class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+          @click.self="showLoginModal = false"
+        >
+          <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+            <div class="flex items-start gap-4 mb-4">
+              <div
+                class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0"
+              >
+                <svg
+                  class="w-6 h-6 text-blue-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                  />
+                </svg>
+              </div>
+              <div class="flex-1">
+                <h3 class="text-lg font-bold text-gray-900">Login Required</h3>
+                <p class="mt-1 text-sm text-gray-600">
+                  Untuk melakukan like dan komentar, kamu perlu login terlebih dahulu.
+                </p>
+              </div>
+            </div>
+
+            <div class="mt-6 flex items-center justify-end gap-3">
+              <button
+                class="px-4 py-2 rounded-xl bg-gray-100 text-gray-700 font-medium hover:bg-gray-200 transition-colors"
+                @click="showLoginModal = false"
+              >
+                Nanti
+              </button>
+
+              <router-link
+                to="/auth/login"
+                class="px-4 py-2 rounded-xl bg-blue-600 text-white font-medium hover:bg-blue-700 transition-colors shadow-sm"
+                @click="showLoginModal = false"
+              >
+                Login Sekarang
+              </router-link>
+            </div>
+          </div>
+        </div>
+      </Transition>
     </div>
   </div>
 </template>
 
 <style scoped>
 @reference "../main.css";
+
 .prose {
   @apply text-gray-700;
 }
+
 .prose p {
   @apply mb-4;
 }
+
 .prose strong {
   @apply text-gray-900 font-semibold;
 }
+
 .prose em {
   @apply italic;
+}
+
+.prose img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 12px;
+}
+
+.prose h1,
+.prose h2,
+.prose h3 {
+  @apply font-bold text-gray-900;
 }
 </style>

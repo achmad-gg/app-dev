@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import api from '../api/axios'
 import { loginApi, registerApi, getProfileApi } from '../api/auth.api'
+import { useNotificationStore } from './notification.store'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -24,21 +25,20 @@ export const useAuthStore = defineStore('auth', {
 
     async register(payload) {
       const body = {
+        name: (payload?.name || '').trim(),
         email: (payload?.email || '').trim(),
-        password: payload?.password || '',
+        password: payload?.password || ''.trim(),
         fullname: (payload?.fullname || '').trim(),
       }
 
       const res = await registerApi(body)
 
-      // kalau backend return token (recommended)
       if (res.data?.token) {
         this.setToken(res.data.token)
         await this.fetchProfile()
         return
       }
 
-      // fallback: kalau register tidak return token, login ulang
       await this.login({
         email: body.email,
         password: body.password,
@@ -54,13 +54,22 @@ export const useAuthStore = defineStore('auth', {
       try {
         const res = await getProfileApi()
         this.user = res.data
-      } catch {
+      } catch (err) {
+        // ❌ auth gagal = logout
         this.logout()
+        return
+      }
+
+      // ⬇️ notif gagal TIDAK BOLEH menggagalkan login
+      try {
+        const notificationStore = useNotificationStore()
+        await notificationStore.fetchMyNotifications()
+      } catch (err) {
+        console.warn('Notification fetch failed', err)
       } finally {
         this.initialized = true
       }
     },
-
     setToken(token) {
       this.token = token
       localStorage.setItem('token', token)
@@ -71,6 +80,9 @@ export const useAuthStore = defineStore('auth', {
       this.user = null
       this.token = null
       this.initialized = true
+
+      const notificationStore = useNotificationStore()
+      notificationStore.$reset()
 
       delete api.defaults.headers.common.Authorization
       localStorage.removeItem('token')

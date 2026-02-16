@@ -1,19 +1,25 @@
 import axios from './axios'
 
-export const getDashboardStatsApi = () =>
-  axios.get('/admin/stats')
+export const getDashboardStatsApi = () => axios.get('/admin/stats')
 
-export const getUsersApi = () =>
-  axios.get('/admin/users')
+export const getUsersApi = () => axios.get('/admin/users')
 
 export const toggleUserStatusApi = (id, is_active) =>
   axios.patch(`/admin/users/${id}/status`, { is_active })
 
-export const getPendingArticlesApi = () =>
-  axios.get('/admin/articles/pending')
+export const getPendingArticlesApi = () => axios.get('/admin/articles/pending')
 
-export const approveArticleApi = (id) =>
-  axios.patch(`/articles/${id}/approve`)
+// export const approveArticleApi = (id) =>
+//   axios.patch(`/articles/${id}/approve`)
 
-export const rejectArticleApi = (id) =>
-  axios.patch(`/articles/${id}/reject`)
+// export const rejectArticleApi = (id) =>
+//   axios.patch(`/articles/${id}/reject`)
+
+export const getAllArticlesAdminApi = (params = {}) => axios.get('/articles/admin/list', { params })
+
+// approve/reject: sesuai routes kamu
+export const approveArticleApi = (id) => axios.patch(`/articles/${id}/approve`)
+export const rejectArticleApi = (id, payload) => axios.patch(`/articles/${id}/reject`, payload)
+
+// ✅ delete artikel (admin bisa) via DELETE /articles/:id
+export const deleteArticleAdminApi = (id) => axios.delete(`/articles/${id}`)

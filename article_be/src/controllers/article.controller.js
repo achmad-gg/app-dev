@@ -15,7 +15,10 @@ const safeLog = async (payload) => {
 ======================= */
 export const create = async (req, res, next) => {
   try {
-    const { title, content, category_id } = req.body;
+    const { title, content, category_id, published_at } = req.body;
+    const cover_image = req.file
+      ? `/uploads/articles/${req.file.filename}`
+      : null;
 
     if (!title || title.length < 5) {
       return res.status(400).json({ message: "Title too short" });
@@ -26,6 +29,8 @@ export const create = async (req, res, next) => {
       content,
       category_id,
       user_id: req.user.id,
+      cover_image,
+      published_at,
     });
 
     res.status(201).json({
@@ -53,14 +58,15 @@ export const create = async (req, res, next) => {
 export const findAllApproved = async (req, res, next) => {
   try {
     const page = Number(req.query.page) || 1;
-    const limit = Number(req.query.limit) || 10;
-    const { category } = req.query;
+    const limit = Number(req.query.limit) || 12;
+    const { categoryId, search } = req.query;
 
     const result = await ArticleService.getArticles({
       page,
       limit,
-      category,
-      status: "approved",
+      categoryId: categoryId ? Number(categoryId) : null,
+      search: search?.trim() || null,
+      isPublic: true, // ⬅️ INI YANG PENTING
     });
 
     res.json({
@@ -76,9 +82,9 @@ export const findAllApproved = async (req, res, next) => {
 
 export const findApprovedById = async (req, res, next) => {
   try {
-    const article = await ArticleService.getArticleById(req.params.id);
+    const article = await ArticleService.getPublicArticleById(req.params.id);
 
-    if (!article || article.status !== "approved") {
+    if (!article) {
       return res.status(404).json({ message: "Article not found" });
     }
 
@@ -87,6 +93,7 @@ export const findApprovedById = async (req, res, next) => {
     next(err);
   }
 };
+
 
 /* =======================
    UPDATE & DELETE
@@ -101,6 +108,9 @@ export const update = async (req, res, next) => {
     }
 
     const { title, content, category_id } = req.body || {};
+    const cover_image = req.file
+      ? `/uploads/articles/${req.file.filename}`
+      : undefined;
 
     if (!title || !content || !category_id) {
       return res.status(400).json({
@@ -113,6 +123,7 @@ export const update = async (req, res, next) => {
       title,
       content,
       category_id,
+      cover_image,
     });
 
     res.json({ message: "Article updated", article: updated });
@@ -138,22 +149,31 @@ export const update = async (req, res, next) => {
   }
 };
 
+// src/controllers/article.controller.js
 export const remove = async (req, res, next) => {
   try {
     const article = await ArticleService.getArticleById(req.params.id);
-    console.log("Req.user:", req.user);
     if (!article) {
       return res.status(404).json({ message: "Article not found" });
     }
 
-    // cek apakah user adalah owner atau admin
-    if (article.user_id !== Number(req.user.id) && req.user.role !== "admin") {
+    const isOwner = Number(article.user_id) === Number(req.user.id);
+    const isAdmin = req.user.role === "admin";
+
+    if (!isOwner && !isAdmin) {
       return res.status(403).json({ message: "Forbidden" });
     }
 
-    await ArticleService.deleteArticle(req.params.id);
+    const ok = isAdmin
+      ? await ArticleService.deleteArticleAdmin(req.params.id)
+      : await ArticleService.deleteArticle(req.params.id, req.user.id);
+
+    if (!ok) {
+      return res.status(400).json({ message: "Failed to delete article" });
+    }
 
     res.json({ message: "Article deleted" });
+
     await safeLog({
       user_id: req.user.id,
       action: "DELETE_ARTICLE",
@@ -161,6 +181,8 @@ export const remove = async (req, res, next) => {
         article_id: Number(req.params.id),
         title: article.title,
         status: article.status,
+        deleted_by: isAdmin ? "admin" : "owner",
+        owner_user_id: Number(article.user_id),
       },
     });
   } catch (err) {
@@ -175,12 +197,12 @@ export const findAllAdmin = async (req, res, next) => {
   try {
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 10;
-    const { category, status } = req.query;
+    const { categoryId, status } = req.query;
 
     const result = await ArticleService.getArticles({
       page,
       limit,
-      category,
+      categoryId,
       status, // pending | approved | rejected
     });
 
@@ -202,9 +224,15 @@ export const approve = async (req, res, next) => {
       status: "approved",
     });
 
-    res.json({
-      message: "Article approved",
-      article,
+    res.json({ message: "Article approved", article });
+
+    await safeLog({
+      user_id: req.user.id,
+      action: "APPROVE_ARTICLE",
+      metadata: {
+        article_id: Number(req.params.id),
+        status: "approved",
+      },
     });
   } catch (err) {
     next(err);
@@ -216,9 +244,7 @@ export const reject = async (req, res, next) => {
     const { reason } = req.body;
 
     if (!reason || reason.length < 5) {
-      return res.status(400).json({
-        message: "Rejection reason is required",
-      });
+      return res.status(400).json({ message: "Rejection reason is required" });
     }
 
     const article = await ArticleService.rejectArticle({
@@ -226,9 +252,16 @@ export const reject = async (req, res, next) => {
       reason,
     });
 
-    res.json({
-      message: "Article rejected",
-      article,
+    res.json({ message: "Article rejected", article });
+
+    await safeLog({
+      user_id: req.user.id,
+      action: "REJECT_ARTICLE",
+      metadata: {
+        article_id: Number(req.params.id),
+        status: "rejected",
+        reason,
+      },
     });
   } catch (err) {
     next(err);

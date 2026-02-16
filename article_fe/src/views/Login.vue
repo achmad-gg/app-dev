@@ -274,17 +274,17 @@ const submit = async () => {
 
           <!-- Divider -->
           <div class="mt-6">
-            <div class="relative">
+            <!-- <div class="relative">
               <div class="absolute inset-0 flex items-center">
                 <div class="w-full border-t border-gray-300"></div>
               </div>
               <div class="relative flex justify-center text-sm">
                 <span class="px-2 bg-white text-gray-500">Or</span>
               </div>
-            </div>
+            </div> -->
 
             <!-- Social Login Buttons -->
-            <div class="mt-6 grid grid-cols-2 gap-3">
+            <!-- <div class="mt-6 grid grid-cols-2 gap-3">
               <button
                 type="button"
                 class="flex items-center justify-center gap-2 px-4 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
@@ -307,7 +307,7 @@ const submit = async () => {
                 </svg>
                 <span class="text-sm font-medium text-gray-700">GitHub</span>
               </button>
-            </div>
+            </div> -->
           </div>
 
           <!-- Sign Up Link -->

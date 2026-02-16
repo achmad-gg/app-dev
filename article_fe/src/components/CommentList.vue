@@ -1,11 +1,15 @@
+// CommentList.vue
 <template>
   <section class="space-y-6">
     <!-- Root Comment Form -->
     <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
       <textarea
         v-model="content"
+        :disabled="props.readonly"
+        :placeholder="
+          props.readonly ? 'Login dulu untuk menulis komentar...' : 'Share your thoughts...'
+        "
         rows="4"
-        placeholder="Share your thoughts..."
         class="w-full px-4 py-3 text-sm text-gray-900 placeholder-gray-400 border-0 focus:outline-none focus:ring-0 resize-none"
       />
 
@@ -13,7 +17,9 @@
         <span class="text-xs text-gray-500"> {{ content.length }}/500 characters </span>
         <button
           @click="submit"
-          :disabled="commentStore.loading || content.length < 3 || content.length > 500"
+          :disabled="
+            props.readonly || commentStore.loading || content.length < 3 || content.length > 500
+          "
           class="inline-flex items-center gap-2 px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 active:bg-blue-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-600"
         >
           <span>{{ commentStore.loading ? 'Posting...' : 'Post Comment' }}</span>
@@ -48,6 +54,8 @@
         :comment="c"
         :article-id="props.articleId"
         :loading="commentStore.loading"
+        :readonly="props.readonly"
+        :can-delete="canDelete(c)"
         @reply="handleReply"
       />
     </div>
@@ -58,20 +66,35 @@
 import { ref, onMounted, computed } from 'vue'
 import { useCommentStore } from '../stores/comment.store'
 import CommentItem from './CommentItem.vue'
+import { useAuthStore } from '@/stores/auth.store'
 
 const commentStore = useCommentStore()
+const auth = useAuthStore()
 
 const props = defineProps({
   articleId: { type: [String, Number], required: true },
+  readonly: { type: Boolean, default: false },
 })
 
 const content = ref('')
 
 const submit = async () => {
+  if (props.readonly) return
   if (content.value.length < 3) return
   await commentStore.addComment(props.articleId, content.value, null)
   content.value = ''
 }
+
+const canDelete = (comment) => {
+  if (!auth.initialized) return false
+  if (!auth.user) return false
+
+  return (
+    auth.user.role === 'admin' ||
+    String(auth.user.id) === String(comment.user_id)
+  )
+}
+
 
 // build tree from flat list
 const commentTree = computed(() => {
@@ -95,8 +118,11 @@ const commentTree = computed(() => {
   return roots
 })
 
+
+
 // child emits { parentId, content }
 const handleReply = async ({ parentId, content }) => {
+  if (props.readonly) return
   await commentStore.addComment(props.articleId, content, parentId)
 }
 

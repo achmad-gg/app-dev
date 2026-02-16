@@ -9,6 +9,7 @@ export const getProfile = async (userId) => {
       u.email,
       u.fullname,
       u.avatar,
+      u.status,
       r.name AS role
     FROM users u
     JOIN roles r ON r.id = u.role_id

@@ -5,6 +5,7 @@ import { useProfileStore } from '../stores/profile.store'
 import { useAuthStore } from '../stores/auth.store'
 import { useRouter, useRoute } from 'vue-router'
 import { changePasswordApi } from '@/api/profile.api'
+import { requestActivationApi } from '@/api/activation.api'
 
 const profileStore = useProfileStore()
 const authStore = useAuthStore()
@@ -13,9 +14,9 @@ const route = useRoute()
 
 // Check if user is admin and came from admin panel
 const isFromAdmin = computed(() => {
-  return authStore.user?.role === 'admin' && (
-    route.query.from === 'admin' || 
-    document.referrer.includes('/admin')
+  return (
+    authStore.user?.role === 'admin' &&
+    (route.query.from === 'admin' || document.referrer.includes('/admin'))
   )
 })
 
@@ -107,10 +108,10 @@ const saveProfile = async () => {
       email: editForm.value.email,
     })
     // Update auth store
-    authStore.user = { 
-      ...authStore.user, 
+    authStore.user = {
+      ...authStore.user,
       fullname: editForm.value.fullname,
-      email: editForm.value.email 
+      email: editForm.value.email,
     }
     isEditingProfile.value = false
   } catch (error) {
@@ -165,6 +166,20 @@ const savePassword = async () => {
     }, 2000)
   } catch (error) {
     passwordError.value = error.response?.data?.message || 'Failed to change password'
+  }
+}
+
+const activationReason = ref('')
+
+const requestActivation = async () => {
+  if (!activationReason.value.trim()) return
+
+  try {
+    await requestActivationApi(activationReason.value)
+    alert('Activation request submitted')
+    activationReason.value = ''
+  } catch (err) {
+    alert(err.response?.data?.message || 'Failed')
   }
 }
 
@@ -358,7 +373,12 @@ watch(
                   :class="getRoleDisplay(profileStore.profile?.role).color"
                   class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium"
                 >
-                  <svg class="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg
+                    class="w-3.5 h-3.5 mr-1.5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
                     <path
                       stroke-linecap="round"
                       stroke-linejoin="round"
@@ -367,6 +387,28 @@ watch(
                     />
                   </svg>
                   {{ getRoleDisplay(profileStore.profile?.role).text }}
+                </span>
+              </div>
+              <div class="mt-2">
+                <span
+                  v-if="profileStore.profile?.status === 'active'"
+                  class="px-3 py-1 text-xs bg-green-100 text-green-700 rounded-full"
+                >
+                  Active
+                </span>
+
+                <span
+                  v-else-if="profileStore.profile?.status === 'suspended'"
+                  class="px-3 py-1 text-xs bg-yellow-100 text-yellow-700 rounded-full"
+                >
+                  Suspended
+                </span>
+
+                <span
+                  v-else-if="profileStore.profile?.status === 'banned'"
+                  class="px-3 py-1 text-xs bg-red-100 text-red-700 rounded-full"
+                >
+                  Permanently Banned
                 </span>
               </div>
             </div>
@@ -418,6 +460,22 @@ watch(
               </button>
             </div>
           </div>
+          <div
+            v-if="profileStore.profile?.status === 'banned'"
+            class="bg-red-50 border border-red-200 rounded-xl p-4 mt-4"
+          >
+            <h4 class="font-semibold text-red-700 mb-2">Your account is permanently banned</h4>
+
+            <textarea
+              v-model="activationReason"
+              placeholder="Explain why your account should be reactivated"
+              class="w-full border rounded-lg p-2 text-sm"
+            />
+
+            <button v-if="authStore.user?.status === 'banned'" @click="requestActivation">
+              Request Account Reactivation
+            </button>
+          </div>
         </div>
 
         <!-- Right Column - Articles -->
@@ -426,7 +484,12 @@ watch(
           <div class="bg-white rounded-2xl shadow-sm p-6">
             <div class="flex items-center justify-between mb-6">
               <h3 class="text-xl font-bold text-gray-900 flex items-center gap-2">
-                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg
+                  class="w-6 h-6 text-blue-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
                   <path
                     stroke-linecap="round"
                     stroke-linejoin="round"
@@ -438,6 +501,7 @@ watch(
               </h3>
 
               <router-link
+                v-if="profileStore.profile?.status === 'active'"
                 to="/write"
                 class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
               >
@@ -451,6 +515,10 @@ watch(
                 </svg>
                 New Article
               </router-link>
+
+              <div v-else class="px-4 py-2 bg-gray-200 text-gray-600 rounded-lg text-sm">
+                Writing disabled (account is suspended or banned)
+              </div>
             </div>
 
             <!-- Empty State -->
@@ -538,6 +606,8 @@ watch(
                         })
                       }}
                     </span>
+                    <span class="text-sm text-gray-500"> {{ article?.views ?? 0 }} views </span>
+                    <span class="text-sm text-gray-500"> {{ article?.likes ?? 0 }} likes </span>
                   </div>
                 </div>
 

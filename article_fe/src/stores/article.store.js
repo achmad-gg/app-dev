@@ -8,49 +8,77 @@ import {
 } from '../api/article.api'
 import { updateArticleApi } from '@/api/article.user.api'
 
+const unwrapList = (res) => ({
+  data: res?.data?.data ?? [],
+  total: Number(res?.data?.total ?? 0),
+})
+
 export const useArticleStore = defineStore('article', {
   state: () => ({
     articles: [],
     articleDetail: null,
-    pagination: { page: 1, total: 0, limit: 10 },
-    loading: { list: false, detail: false, create: false },
+    pagination: { page: 1, total: 0, limit: 12 },
+    filters: {
+      categoryId: null,
+      search: '',
+    },
+    loading: { list: false, detail: false, create: false, update: false },
+    error: null,
   }),
 
   actions: {
-    async fetchArticles(params = {}) {
+    setCategoryFilter(categoryId) {
+      this.filters.categoryId = categoryId
+      this.pagination.page = 1
+    },
+
+    setSearchFilter(keyword) {
+      this.filters.search = keyword
+      this.pagination.page = 1
+    },
+
+    async fetchArticles(extraParams = {}) {
       this.loading.list = true
+      this.error = null
+
       try {
         const res = await fetchArticlesApi({
           page: this.pagination.page,
           limit: this.pagination.limit,
-          ...params,
+          ...this.filters,
+          ...extraParams,
         })
 
-        this.articles = res.data?.data || []
-        this.pagination.total = Number(res.data?.total || 0)
+        const { data, total } = unwrapList(res)
+        this.articles = data
+        this.pagination.total = total
       } catch (err) {
-        console.error(err)
+        this.error = err?.response?.data?.message || err?.message || 'Failed to fetch articles'
+
         this.articles = []
         this.pagination.total = 0
+        throw err
       } finally {
         this.loading.list = false
       }
     },
 
-    async fetchArticleDetail(id) {
+    async fetchArticleDetail(id, { isPublic = false } = {}) {
       this.loading.detail = true
+      this.error = null
       this.articleDetail = null
+
       try {
-        const res = await fetchArticleDetailApi(id)
+        const res = isPublic
+          ? await fetchArticleDetailPublicApi(id)
+          : await fetchArticleDetailApi(id)
+
         this.articleDetail = res.data || null
         return this.articleDetail
       } catch (err) {
-        const status = err?.response?.status
-        if (status === 401 || status === 403) {
-          const res2 = await fetchArticleDetailPublicApi(id)
-          this.articleDetail = res2.data || null
-          return this.articleDetail
-        }
+        this.error =
+          err?.response?.data?.message || err?.message || 'Failed to fetch article detail'
+
         this.articleDetail = null
         throw err
       } finally {
@@ -60,25 +88,32 @@ export const useArticleStore = defineStore('article', {
 
     async createArticle(payload) {
       this.loading.create = true
+      this.error = null
       try {
         const res = await createArticleApi(payload)
         return res.data
+      } catch (err) {
+        this.error = err?.response?.data?.message || err?.message || 'Failed to create article'
+        throw err
       } finally {
         this.loading.create = false
       }
     },
 
     async updateArticle(id, payload) {
-      this.loading.create = true // atau bikin loading.update kalau mau lebih rapih
+      this.loading.update = true
+      this.error = null
       try {
         const res = await updateArticleApi(id, payload)
-        // optional: update articleDetail kalau sedang buka detail yang sama
         if (this.articleDetail?.id === Number(id) || this.articleDetail?.id === id) {
           this.articleDetail = res.data?.article || res.data
         }
         return res.data
+      } catch (err) {
+        this.error = err?.response?.data?.message || err?.message || 'Failed to update article'
+        throw err
       } finally {
-        this.loading.create = false
+        this.loading.update = false
       }
     },
 
@@ -91,10 +126,15 @@ export const useArticleStore = defineStore('article', {
     },
     prevPage() {
       if (this.pagination.page <= 1) return
-      this.setPage(this.pagination.page - 1)
+      this.pagination.page--
+      this.fetchArticles()
     },
+
     nextPage() {
-      this.setPage(this.pagination.page + 1)
+      // optional: cek apakah sudah halaman terakhir
+      if (this.pagination.page * this.pagination.limit >= this.pagination.total) return
+      this.pagination.page++
+      this.fetchArticles()
     },
   },
 })

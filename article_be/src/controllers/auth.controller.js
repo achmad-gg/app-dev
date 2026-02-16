@@ -6,10 +6,12 @@ import { logActivity } from "../utils/activityLogger.js";
 
 export const register = async (req, res, next) => {
   try {
-    const { email, password} = req.body;
+    const { name, email, password } = req.body;
 
-    if (!email || !password) {
-      return res.status(400).json({ message: "Email & password required" });
+    if (!name || !email || !password) {
+      return res
+        .status(400)
+        .json({ message: "Name, email & password required" });
     }
 
     const checkUser = await pool.query(
@@ -24,10 +26,10 @@ export const register = async (req, res, next) => {
     const hashed = await hashPassword(password);
 
     const result = await pool.query(
-      `INSERT INTO users (email, password, role_id)
-       VALUES ($1, $2, 2)
+      `INSERT INTO users (fullname,email, password, role_id)
+       VALUES ($1, $2, $3, 2)
        RETURNING id, email`,
-      [email, hashed],
+      [name, email, hashed],
     );
 
     res.status(201).json({
@@ -44,10 +46,10 @@ export const login = async (req, res, next) => {
     const { email, password } = req.body;
 
     const result = await pool.query(
-      `SELECT u.id, u.email, u.password, r.name AS role
+      `SELECT u.id, u.email, u.password, u.status, r.name AS role
        FROM users u
        JOIN roles r ON r.id = u.role_id
-       WHERE u.email = $1 AND u.is_active = true`,
+       WHERE u.email = $1`,
       [email],
     );
 
@@ -65,19 +67,24 @@ export const login = async (req, res, next) => {
     const token = generateToken({
       id: user.id,
       role: user.role,
-      
+      status: user.status, // optional but recommended
     });
 
     res.json({
       message: "Login success",
       token,
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        status: user.status,
+      },
     });
+
     await logActivity({
       user_id: user.id,
       action: "LOGIN",
-      metadata: {
-        email: user.email,
-      },
+      metadata: { email: user.email },
     });
   } catch (err) {
     next(err);

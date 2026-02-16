@@ -4,12 +4,13 @@ import * as controller from '../controllers/comment.controller.js'
 import { authMiddleware } from '../middlewares/auth.middleware.js'
 import { roleMiddleware } from '../middlewares/role.middleware.js'
 import { commentLimiter } from '../middlewares/rateLimit.middleware.js'
+import { writeGuard } from '../middlewares/writeGuard.js'
 
 
 const router = express.Router()
 
 router.get('/article/:articleId', controller.findByArticle)
-router.post('/article/:articleId', authMiddleware, commentLimiter, controller.create)
+router.post('/article/:articleId', authMiddleware, writeGuard, commentLimiter, controller.create)
 router.delete('/:id', authMiddleware, controller.remove)
 
 router.patch(
