@@ -19,7 +19,12 @@ export const getDashboardStats = async (req, res, next) => {
 export const getAllUsers = async (req, res, next) => {
   try {
     const currentUserId = req.user.id;
-    const users = await AdminService.getUsers(currentUserId);
+
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 10;
+
+    const users = await AdminService.getUsers(currentUserId, page, limit);
+
     return res.json(users);
   } catch (err) {
     next(err);
@@ -39,7 +44,7 @@ export const toggleUserStatus = async (req, res, next) => {
   try {
     const user = await AdminService.updateUserStatus(
       req.params.id,
-      req.body.is_active
+      req.body.is_active,
     );
 
     if (!user) return res.status(404).json({ message: "User not found" });
@@ -54,7 +59,7 @@ export const changeUserRole = async (req, res, next) => {
   try {
     const user = await AdminService.updateUserRole(
       req.params.id,
-      req.body.role_id
+      req.body.role_id,
     );
 
     if (!user) return res.status(404).json({ message: "User not found" });

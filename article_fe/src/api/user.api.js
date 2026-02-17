@@ -7,3 +7,5 @@ export const blockUserApi = (id) => {
 export const activateUserApi = (id) => {
   return axios.patch(`/users/${id}/activate`)
 }
+
+export const fetchActivationRequestsApi = () => axios.get('/activation/activation-requests')

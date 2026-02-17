@@ -1,5 +1,5 @@
 // src/services/admin.service.js
-import { pool } from '../config/db.js'
+import { pool } from "../config/db.js";
 
 /* ============================================================
    DASHBOARD STATS
@@ -15,15 +15,15 @@ export const getStats = async () => {
     likes,
     pendingArticles,
   ] = await Promise.all([
-    pool.query('SELECT COUNT(*) FROM users'),
+    pool.query("SELECT COUNT(*) FROM users"),
     pool.query("SELECT COUNT(*) FROM users WHERE status = 'active'"),
     pool.query("SELECT COUNT(*) FROM users WHERE status = 'suspended'"),
     pool.query("SELECT COUNT(*) FROM users WHERE status = 'banned'"),
-    pool.query('SELECT COUNT(*) FROM articles'),
-    pool.query('SELECT COUNT(*) FROM comments'),
-    pool.query('SELECT COUNT(*) FROM likes'),
+    pool.query("SELECT COUNT(*) FROM articles"),
+    pool.query("SELECT COUNT(*) FROM comments"),
+    pool.query("SELECT COUNT(*) FROM likes"),
     pool.query("SELECT COUNT(*) FROM articles WHERE status = 'pending'"),
-  ])
+  ]);
 
   return {
     users: Number(users.rows[0].count),
@@ -34,16 +34,16 @@ export const getStats = async () => {
     comments: Number(comments.rows[0].count),
     likes: Number(likes.rows[0].count),
     pending_articles: Number(pendingArticles.rows[0].count),
-  }
-}
-
+  };
+};
 
 /* ============================================================
    GET USERS
 ============================================================ */
-export const getUsers = async (currentUserId) => {
-  const { rows } = await pool.query(
-    `
+export const getUsers = async (currentUserId, page = 1, limit = 10) => {
+  const offset = (page - 1) * limit;
+
+  const dataQuery = `
     SELECT 
       u.id,
       u.fullname,
@@ -56,47 +56,62 @@ export const getUsers = async (currentUserId) => {
     JOIN roles r ON r.id = u.role_id
     WHERE u.id <> $1
     ORDER BY u.created_at DESC
-    `,
-    [currentUserId]
-  )
+    LIMIT $2 OFFSET $3
+  `;
 
-  return rows
-}
+  const countQuery = `
+    SELECT COUNT(*) 
+    FROM users
+    WHERE id <> $1
+  `;
 
+  const [dataResult, countResult] = await Promise.all([
+    pool.query(dataQuery, [currentUserId, limit, offset]),
+    pool.query(countQuery, [currentUserId]),
+  ]);
+
+  return {
+    data: dataResult.rows,
+    total: Number(countResult.rows[0].count),
+    page,
+    limit,
+    totalPages: Math.ceil(Number(countResult.rows[0].count) / limit),
+  };
+};
 
 /* ============================================================
    SUSPEND USER (TEMPORARY BLOCK)
 ============================================================ */
 export const suspendUser = async (targetUserId, adminId) => {
-  const client = await pool.connect()
+  const client = await pool.connect();
 
   try {
-    await client.query('BEGIN')
+    await client.query("BEGIN");
 
     const userRes = await client.query(
       `SELECT id, role_id, status, violation_count
        FROM users
        WHERE id = $1
        FOR UPDATE`,
-      [targetUserId]
-    )
+      [targetUserId],
+    );
 
     if (userRes.rows.length === 0) {
-      throw new Error('User not found')
+      throw new Error("User not found");
     }
 
-    const user = userRes.rows[0]
+    const user = userRes.rows[0];
 
     // only role user (2)
     if (user.role_id !== 2) {
-      throw new Error('Only normal users can be suspended')
+      throw new Error("Only normal users can be suspended");
     }
 
-    if (user.status === 'banned') {
-      throw new Error('User already permanently banned')
+    if (user.status === "banned") {
+      throw new Error("User already permanently banned");
     }
 
-    const newViolationCount = user.violation_count + 1
+    const newViolationCount = user.violation_count + 1;
 
     // 3x suspend → permanent ban
     if (newViolationCount >= 3) {
@@ -111,8 +126,8 @@ export const suspendUser = async (targetUserId, adminId) => {
           blocked_by = $2
         WHERE id = $3
         `,
-        [newViolationCount, adminId, targetUserId]
-      )
+        [newViolationCount, adminId, targetUserId],
+      );
     } else {
       // 7 day suspension
       await client.query(
@@ -126,21 +141,20 @@ export const suspendUser = async (targetUserId, adminId) => {
           blocked_by = $2
         WHERE id = $3
         `,
-        [newViolationCount, adminId, targetUserId]
-      )
+        [newViolationCount, adminId, targetUserId],
+      );
     }
 
-    await client.query('COMMIT')
+    await client.query("COMMIT");
 
-    return { success: true }
+    return { success: true };
   } catch (err) {
-    await client.query('ROLLBACK')
-    throw err
+    await client.query("ROLLBACK");
+    throw err;
   } finally {
-    client.release()
+    client.release();
   }
-}
-
+};
 
 /* ============================================================
    ACTIVATE USER (ONLY FROM SUSPENDED)
@@ -156,16 +170,15 @@ export const activateUser = async (id) => {
       AND status = 'suspended'
     RETURNING id, status
     `,
-    [id]
-  )
+    [id],
+  );
 
   if (!rows.length) {
-    throw new Error('User cannot be activated')
+    throw new Error("User cannot be activated");
   }
 
-  return rows[0]
-}
-
+  return rows[0];
+};
 
 /* ============================================================
    GET PENDING ARTICLES
@@ -181,7 +194,7 @@ export const getPendingArticles = async () => {
     JOIN users u ON u.id = a.user_id
     WHERE a.status = 'pending'
     ORDER BY a.created_at DESC
-  `)
+  `);
 
-  return rows
-}
+  return rows;
+};

@@ -9,7 +9,8 @@ import {
   rejectArticleApi,
   deleteArticleAdminApi,
 } from '@/api/admin.api'
-import { blockUserApi, activateUserApi } from '@/api/user.api'
+import { blockUserApi, activateUserApi, fetchActivationRequestsApi } from '@/api/user.api'
+import { approveActivationApi, rejectActivationApi } from '@/api/activation.api'
 
 // normalize: support res.data.data atau res.data
 const unwrap = (res) => res?.data?.data ?? res?.data ?? res
@@ -18,9 +19,22 @@ export const useAdminStore = defineStore('admin', {
   state: () => ({
     stats: null,
     users: [],
+    usersMeta: {
+      page: 1,
+      limit: 10,
+      total: 0,
+      totalPages: 1,
+    },
+    activationRequests: [],
 
     // ✅ list admin: semua artikel
     articles: [],
+    articlesMeta: {
+      page: 1,
+      limit: 10,
+      total: 0,
+      totalPages: 1,
+    },
     filters: {
       status: 'all', // all | pending | approved | rejected
     },
@@ -30,6 +44,7 @@ export const useAdminStore = defineStore('admin', {
 
     loading: {
       global: false,
+      users: false,
       approve: false,
       reject: false,
       delete: false,
@@ -40,6 +55,7 @@ export const useAdminStore = defineStore('admin', {
   getters: {
     pendingCount: (s) => s.pendingArticles.length,
     articlesCount: (s) => s.articles.length,
+    usersCount: (s) => s.usersMeta.total,
   },
 
   actions: {
@@ -61,16 +77,29 @@ export const useAdminStore = defineStore('admin', {
 
     async fetchDashboard() {
       return this.withLoading('global', async () => {
-        const [statsRes, usersRes, pendingRes] = await Promise.all([
+        const [statsRes, pendingRes] = await Promise.all([
           getDashboardStatsApi(),
-          getUsersApi(),
           getPendingArticlesApi(),
         ])
 
         this.stats = unwrap(statsRes) ?? null
-        this.users = Array.isArray(unwrap(usersRes)) ? unwrap(usersRes) : []
         this.pendingArticles = Array.isArray(unwrap(pendingRes)) ? unwrap(pendingRes) : []
       })
+    },
+
+    async fetchUsers(page = 1, limit = 10) {
+      const res = await getUsersApi({ page, limit })
+
+      const payload = res.data // ⬅ ambil layer yang benar
+
+      this.users = Array.isArray(payload.data) ? payload.data : []
+
+      this.usersMeta = {
+        page: payload.page,
+        limit: payload.limit,
+        total: payload.total,
+        totalPages: payload.totalPages,
+      }
     },
 
     async fetchPendingArticles() {
@@ -81,16 +110,36 @@ export const useAdminStore = defineStore('admin', {
       })
     },
 
-    // ✅ ambil semua artikel untuk admin page
     async fetchArticles(status = 'all') {
       return this.withLoading('global', async () => {
-        const params = {}
-        if (status !== 'all') params.status = status
+        const params = {
+          page: this.articlesMeta.page ?? 1,
+          limit: this.articlesMeta.limit ?? 10,
+        }
+
+        if (status !== 'all') {
+          params.status = status
+        }
 
         const res = await getAllArticlesAdminApi(params)
 
-        // ✅ sesuai response findAllAdmin: { data: [...] }
-        this.articles = res.data?.data || []
+        console.log('ADMIN ARTICLES RAW:', res?.data)
+
+        const payload = res?.data ?? {}
+
+        // Pastikan articles selalu array
+        this.articles = Array.isArray(payload.data) ? payload.data : []
+
+        // Defensive assignment
+        const page = Number(payload.page) || 1
+        const limit = Number(payload.limit) || 10
+        const total = Number(payload.total) || 0
+
+        this.articlesMeta.page = page
+        this.articlesMeta.limit = limit
+        this.articlesMeta.total = total
+        this.articlesMeta.totalPages = limit > 0 ? Math.ceil(total / limit) : 1
+
         this.filters.status = status
       })
     },
@@ -167,6 +216,27 @@ export const useAdminStore = defineStore('admin', {
       }
 
       return res.data
+    },
+
+    async fetchActivationRequests() {
+      const res = await fetchActivationRequestsApi()
+      const data = unwrap(res)
+
+      this.activationRequests = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.requests)
+          ? data.requests
+          : []
+    },
+
+    async approveActivationRequest(id) {
+      await approveActivationApi(id)
+      await this.fetchActivationRequests()
+    },
+
+    async rejectActivationRequest(id) {
+      await rejectActivationApi(id)
+      await this.fetchActivationRequests()
     },
   },
 })

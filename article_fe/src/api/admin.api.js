@@ -2,7 +2,9 @@ import axios from './axios'
 
 export const getDashboardStatsApi = () => axios.get('/admin/stats')
 
-export const getUsersApi = () => axios.get('/admin/users')
+export const getUsersApi = (params) =>
+  axios.get('/admin/users', { params })
+
 
 export const toggleUserStatusApi = (id, is_active) =>
   axios.patch(`/admin/users/${id}/status`, { is_active })
@@ -23,3 +25,5 @@ export const rejectArticleApi = (id, payload) => axios.patch(`/articles/${id}/re
 
 // ✅ delete artikel (admin bisa) via DELETE /articles/:id
 export const deleteArticleAdminApi = (id) => axios.delete(`/articles/${id}`)
+
+

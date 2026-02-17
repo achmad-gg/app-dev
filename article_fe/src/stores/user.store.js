@@ -1,8 +1,5 @@
 import { defineStore } from 'pinia'
-import {
-  requestActivationApi,
-  getMyActivationStatusApi,
-} from '@/api/activation.api'
+import { requestActivationApi, getMyActivationStatusApi } from '@/api/activation.api'
 
 const unwrap = (res) => res?.data?.data ?? res?.data ?? res
 
@@ -21,8 +18,7 @@ export const useUserStore = defineStore('user', {
     isBanned: (s) => s.user?.status === 'banned',
     isSuspended: (s) => s.user?.status === 'suspended',
     isActive: (s) => s.user?.status === 'active',
-    hasPendingActivation: (s) =>
-      s.activationRequest?.status === 'pending',
+    hasPendingActivation: (s) => s.activationRequest?.status === 'pending',
   },
 
   actions: {
@@ -42,8 +38,7 @@ export const useUserStore = defineStore('user', {
 
         return data
       } catch (err) {
-        this.error =
-          err?.response?.data?.message || 'Failed to request activation'
+        this.error = err?.response?.data?.message || 'Failed to request activation'
         throw err
       } finally {
         this.loading.activation = false
@@ -62,6 +57,11 @@ export const useUserStore = defineStore('user', {
       } finally {
         this.loading.status = false
       }
+    },
+
+    async fetchActivationRequests() {
+      const res = await fetchActivationRequestsApi()
+      this.activationRequests = unwrap(res)
     },
 
     clearActivation() {

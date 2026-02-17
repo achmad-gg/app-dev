@@ -1,6 +1,6 @@
 import {
   blockUserService,
-  activateUserService,
+  activateUserService
 } from "../services/user.service.js";
 
 export const blockUser = async (req, res) => {
@@ -44,3 +44,5 @@ export const activateUser = async (req, res) => {
     res.status(400).json({ message: err.message });
   }
 };
+
+
