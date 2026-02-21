@@ -22,10 +22,35 @@ export const useNotificationStore = defineStore('notification', {
       }
     },
 
-    async markAllAsRead(id) {
-      await api.patch(`/notifications/${id}/read`)
-      const n = this.notifications.find((n) => n.id === id)
-      if (n) n.is_read = true
+    async markAllAsRead() {
+      // Find all unread notifications
+      const unreadNotifications = this.notifications.filter((n) => !n.is_read)
+      
+      if (unreadNotifications.length === 0) return
+
+      try {
+        // Send a request for each unread notification
+        await Promise.all(
+          unreadNotifications.map((n) => api.patch(`/notifications/${n.id}/read`))
+        )
+        
+        // Update local state
+        unreadNotifications.forEach((n) => {
+          n.is_read = true
+        })
+      } catch (err) {
+        console.error('Failed to mark all as read:', err)
+      }
+    },
+
+    async markAsRead(id) {
+      try {
+        await api.patch(`/notifications/${id}/read`)
+        const n = this.notifications.find((n) => n.id === id)
+        if (n) n.is_read = true
+      } catch (err) {
+        console.error('Failed to mark as read:', err)
+      }
     },
 
     async clearAll() {

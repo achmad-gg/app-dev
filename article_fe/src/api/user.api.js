@@ -1,7 +1,7 @@
 import axios from './axios'
 
-export const blockUserApi = (id) => {
-  return axios.patch(`/users/${id}/block`)
+export const blockUserApi = (id, reason) => {
+  return axios.patch(`/users/${id}/block`, { reason })
 }
 
 export const activateUserApi = (id) => {

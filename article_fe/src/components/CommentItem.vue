@@ -208,6 +208,17 @@ const canDelete = computed(() => {
 
 const deleteComment = async () => {
   if (!confirm('Delete this comment and all replies?')) return
-  await commentStore.deleteComment(props.comment.id, props.articleId)
+  
+  let reason = undefined
+  if (auth.user?.role === 'admin') {
+    reason = prompt('Please provide a reason for deleting this comment (min 5 characters):')
+    if (reason === null) return // Canceled
+    if (!reason || reason.trim().length < 5) {
+      alert('A valid reason (min 5 characters) is required for admin deletion.')
+      return
+    }
+  }
+
+  await commentStore.deleteComment(props.comment.id, props.articleId, reason)
 }
 </script>

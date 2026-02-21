@@ -3,6 +3,7 @@ import * as ProfileService from "../services/profile.service.js";
 import { hashPassword, comparePassword } from "../utils/hash.js";
 import { pool } from "../config/db.js";
 import { logActivity } from "../utils/activityLogger.js";
+import fs from "fs";
 
 
 export const getMe = async (req, res, next) => {

@@ -83,15 +83,20 @@ const pageNumbers = computed(() => {
 // ─── User Management ─────────────────────────────────────────────────────────
 const punishUser = async (user) => {
   if (user.status === 'banned') return
-  if (
-    !confirm(
-      `Add violation to ${user.email}?\n\nSystem will auto suspend or permanently ban based on violation count.`,
-    )
+  
+  const reason = prompt(
+    `Add violation to ${user.email}?\n\nSystem will auto suspend or permanently ban based on violation count.\n\nPlease enter a reason (min 5 characters):`
   )
+  
+  if (reason === null) return // user canceled
+  if (!reason || reason.trim().length < 5) {
+    alert('Reason must be at least 5 characters long.')
     return
+  }
+  
   loadingUserId.value = user.id
   try {
-    await adminStore.blockUser(user.id)
+    await adminStore.blockUser(user.id, reason)
   } finally {
     loadingUserId.value = null
   }

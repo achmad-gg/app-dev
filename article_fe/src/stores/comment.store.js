@@ -41,10 +41,10 @@ export const useCommentStore = defineStore('comment', {
       }
     },
 
-    async deleteComment(id, articleId) {
+    async deleteComment(id, articleId, reason) {
       this.loading = true
       try {
-        await deleteCommentApi(id)
+        await deleteCommentApi(id, reason)
         // opsi A: hard delete + cascade → refetch
         await this.fetchComments(articleId)
       } finally {

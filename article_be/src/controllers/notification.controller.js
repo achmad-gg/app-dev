@@ -12,12 +12,16 @@ export async function getMyNotifications(req, res) {
   res.json(data);
 }
 
-export async function readNotification(req, res) {
-  const userId = req.user.id;
-  const { id } = req.params;
+export async function readNotification(req, res, next) {
+  try {
+    const userId = req.user.id;
+    const { id } = req.params;
 
-  await markNotificationAsRead(id, userId);
-  res.json({ success: true });
+    await markNotificationAsRead(id, userId);
+    res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
 }
 
 export async function clearNotifications(req, res, next) {

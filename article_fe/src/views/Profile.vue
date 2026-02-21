@@ -28,7 +28,12 @@ const isActive = computed(() => status.value === 'active')
 /* ─── Avatar ──────────────────────────────────────────────────────────── */
 const avatarInput = ref(null)
 const uploadingAvatar = ref(false)
-const avatarUrl = computed(() => profile.value?.avatar || null)
+const avatarKey = ref(Date.now())
+const avatarUrl = computed(() => {
+  const url = profileStore.profile?.avatar
+  if (!url) return null
+  return `${url}?_t=${avatarKey.value}`
+})
 
 const onAvatarChange = async (e) => {
   const file = e.target.files[0]
@@ -36,8 +41,10 @@ const onAvatarChange = async (e) => {
   uploadingAvatar.value = true
   try {
     await profileStore.uploadAvatar(file)
-    if (profile.value?.avatar) {
-      authStore.user = { ...authStore.user, avatar: profile.value.avatar }
+    // Sinkronkan ke auth store & re-render param gambar
+    if (profileStore.profile?.avatar) {
+      avatarKey.value = Date.now()
+      authStore.user = { ...authStore.user, avatar: profileStore.profile.avatar }
     }
   } catch (err) {
     console.error('Avatar upload failed:', err)

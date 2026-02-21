@@ -1,6 +1,6 @@
 <!-- components/sidebar/AdminSidebar.vue -->
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth.store'
 import { useRouter } from 'vue-router'
 import { useConfirm } from '@/composables/useConfirm'
@@ -12,7 +12,20 @@ const { confirm } = useConfirm()
 const showDropdown = ref(false)
 const dropdownRef = ref(null)
 
-const avatarUrl = computed(() => auth.user?.avatar || null)
+const avatarKey = ref(Date.now())
+
+watch(
+  () => auth.user?.avatar,
+  () => {
+    avatarKey.value = Date.now()
+  }
+)
+
+const avatarUrl = computed(() => {
+  const url = auth.user?.avatar
+  if (!url) return null
+  return `${url}?_t=${avatarKey.value}`
+})
 
 const toggleDropdown = () => {
   showDropdown.value = !showDropdown.value

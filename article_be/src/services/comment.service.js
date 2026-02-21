@@ -35,8 +35,7 @@ JOIN roles r ON r.id = u.role_id
 WHERE c.article_id = $1
   AND c.is_approved = true
 ORDER BY c.created_at DESC;
-
-  `;
+`;
   const { rows } = await pool.query(query, [article_id]);
   return rows;
 };
@@ -75,6 +74,7 @@ export async function deleteCommentWithPermission({
   commentId,
   actorId,
   actorRole,
+  reason = "Melanggar pedoman komunitas",
 }) {
   const comment = await getCommentById(commentId);
   if (!comment) {
@@ -97,11 +97,12 @@ export async function deleteCommentWithPermission({
     await createNotification({
       user_id: comment.user_id,
       type: "comment_deleted",
-      message: "Komentar kamu dihapus oleh admin.",
+      message: `Komentar kamu dihapus oleh admin karena alasan: ${reason}`,
       meta: {
         comment_id: comment.id,
         article_id: comment.article_id,
         deleted_by: actorId,
+        reason,
       },
     });
   }

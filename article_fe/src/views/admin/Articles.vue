@@ -31,10 +31,12 @@ const statusMeta = {
 const showRejectModal = ref(false)
 const showDeleteModal = ref(false)
 const rejectReason = ref('')
+const deleteReason = ref('')
 const selectedArticle = ref(null)
 const isRefreshing = ref(false)
 
 const rejectDisabled = computed(() => rejectReason.value.trim().length < 5)
+const deleteDisabled = computed(() => deleteReason.value.trim().length < 5)
 
 /* ─────────────────────────────────────────────
    Pagination — single source of truth (store)
@@ -161,22 +163,37 @@ const confirmReject = async () => {
 }
 
 /* ─────────────────────────────────────────────
+   Helper: Extract Plain Text from HTML
+───────────────────────────────────────────── */
+const getExcerptText = (content, fallback) => {
+  if (!content) return fallback || '-'
+  const div = document.createElement('div')
+  div.innerHTML = content
+  const text = div.textContent || div.innerText || ''
+  return text.length > 150 ? text.slice(0, 150) + '...' : text
+}
+
+/* ─────────────────────────────────────────────
    Delete — edge-case safe, tanpa double-fetch
 ───────────────────────────────────────────── */
 const openDelete = (a) => {
   selectedArticle.value = a
+  deleteReason.value = ''
   showDeleteModal.value = true
 }
 
 const closeDeleteModal = () => {
   showDeleteModal.value = false
   selectedArticle.value = null
+  deleteReason.value = ''
 }
 
 const confirmDelete = async () => {
   if (!selectedArticle.value) return
+  const reason = deleteReason.value.trim()
+  if (reason.length < 5) return
 
-  await adminStore.deleteArticle(selectedArticle.value.id)
+  await adminStore.deleteArticle(selectedArticle.value.id, reason)
   closeDeleteModal()
 
   // Edge case: hapus item terakhir di halaman non-pertama.
@@ -422,7 +439,7 @@ onMounted(() => adminStore.fetchArticles('all'))
                     v-if="a.content || a.excerpt"
                     class="text-sm text-gray-600 line-clamp-2 leading-relaxed"
                   >
-                    {{ a.content || a.excerpt }}
+                    {{ getExcerptText(a.content, a.excerpt) }}
                   </p>
 
                   <!-- Stats -->
@@ -729,6 +746,30 @@ onMounted(() => adminStore.fetchArticles('all'))
                 </p>
               </div>
 
+              <div class="space-y-1.5">
+                <label class="block text-xs font-semibold text-gray-700">
+                  Deletion Reason <span class="text-red-500">*</span>
+                </label>
+                <textarea
+                  v-model="deleteReason"
+                  rows="3"
+                  placeholder="Reason for deletion (e.g. Inappropriate content, spam)…"
+                  class="w-full px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:border-red-400 resize-none transition-all"
+                  :class="{
+                    'border-red-300': deleteReason.length > 0 && deleteReason.trim().length < 5,
+                  }"
+                />
+                <div class="flex items-center justify-between text-[11px]">
+                  <span class="text-gray-400">{{ deleteReason.trim().length }} chars</span>
+                  <span
+                    v-if="deleteReason.trim().length > 0 && deleteReason.trim().length < 5"
+                    class="text-red-500 font-medium"
+                  >
+                    Min. 5 characters
+                  </span>
+                </div>
+              </div>
+
               <div class="flex gap-2 pt-3 border-t border-gray-100">
                 <button
                   @click="closeDeleteModal"
@@ -739,7 +780,7 @@ onMounted(() => adminStore.fetchArticles('all'))
                 </button>
                 <button
                   @click="confirmDelete"
-                  :disabled="adminStore.loading.delete"
+                  :disabled="deleteDisabled || adminStore.loading.delete"
                   class="flex-1 px-4 py-2.5 text-sm font-semibold rounded-lg bg-red-600 hover:bg-red-700 text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-sm"
                 >
                   <span v-if="!adminStore.loading.delete">Delete</span>

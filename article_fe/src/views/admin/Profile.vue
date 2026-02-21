@@ -47,8 +47,13 @@ const passwordSuccess = ref(false)
 // Avatar
 const avatarInput = ref(null)
 const uploadingAvatar = ref(false)
+const avatarKey = ref(Date.now()) // Untuk memaksa reaktivitas URL ketika nama file gambar masih sama
 
-const avatarUrl = computed(() => profileStore.profile?.avatar || null)
+const avatarUrl = computed(() => {
+  const url = profileStore.profile?.avatar
+  if (!url) return null
+  return `${url}?_t=${avatarKey.value}`
+})
 
 const onAvatarChange = async (e) => {
   const file = e.target.files[0]
@@ -58,6 +63,7 @@ const onAvatarChange = async (e) => {
   try {
     await profileStore.uploadAvatar(file)
     if (profileStore.profile?.avatar) {
+      avatarKey.value = Date.now() // Trigger pembaharuan gambar via _t
       authStore.user = { ...authStore.user, avatar: profileStore.profile.avatar }
     }
   } catch (error) {

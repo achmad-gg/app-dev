@@ -34,7 +34,7 @@
       </h3>
 
       <p class="text-gray-600 text-sm line-clamp-3">
-        {{ article?.excerpt || article?.content || '-' }}
+        {{ excerptText }}
       </p>
 
       <div class="flex justify-between items-center text-xs text-gray-500 mt-2">
@@ -54,6 +54,18 @@ import { useRouter } from 'vue-router'
 import { computed } from 'vue'
 
 const API_BASE_URL = 'http://localhost:3000'
+
+const excerptText = computed(() => {
+  if (props.article?.excerpt) return props.article.excerpt
+  if (!props.article?.content) return '-'
+
+  // Buat element sementara untuk strip HTML dari konten Quill
+  const div = document.createElement('div')
+  div.innerHTML = props.article.content
+  const text = div.textContent || div.innerText || ''
+  
+  return text.length > 150 ? text.slice(0, 150) + '...' : text
+})
 
 const coverImageUrl = computed(() => {
   const img = props.article?.cover_image

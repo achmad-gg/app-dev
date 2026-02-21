@@ -61,11 +61,18 @@ export const remove = async (req, res, next) => {
   try {
     const commentId = req.params.id;
     const actor = req.user; // { id, role }
+    const { reason } = req.body;
+
+    // Admin should provide a reason
+    if (actor.role === "admin" && (!reason || reason.trim().length < 5)) {
+      return res.status(400).json({ message: "Admin must provide a valid reason (min 5 characters) to delete a comment" });
+    }
 
     await CommentService.deleteCommentWithPermission({
       commentId,
       actorId: actor.id,
       actorRole: actor.role,
+      reason,
     });
 
     res.json({ message: "Comment deleted" });

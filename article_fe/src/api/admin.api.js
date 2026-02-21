@@ -23,7 +23,7 @@ export const getAllArticlesAdminApi = (params = {}) => axios.get('/articles/admi
 export const approveArticleApi = (id) => axios.patch(`/articles/${id}/approve`)
 export const rejectArticleApi = (id, payload) => axios.patch(`/articles/${id}/reject`, payload)
 
-// ✅ delete artikel (admin bisa) via DELETE /articles/:id
-export const deleteArticleAdminApi = (id) => axios.delete(`/articles/${id}`)
+export const deleteArticleAdminApi = (id, reason) =>
+  axios.delete(`/articles/${id}`, { data: { reason } })
 
 

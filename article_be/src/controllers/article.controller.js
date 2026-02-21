@@ -1,5 +1,6 @@
 import * as ArticleService from "../services/article.service.js";
 import { logActivity } from "../utils/activityLogger.js";
+import { createNotification } from "../services/notification.service.js";
 
 const safeLog = async (payload) => {
   try {
@@ -159,6 +160,15 @@ export const remove = async (req, res, next) => {
 
     const isOwner = Number(article.user_id) === Number(req.user.id);
     const isAdmin = req.user.role === "admin";
+    
+    let reasonText = null;
+    if (isAdmin && !isOwner) {
+      const { reason } = req.body;
+      if (!reason || reason.trim().length < 5) {
+        return res.status(400).json({ message: "Admin must provide a valid reason (min 5 characters) to delete an article" });
+      }
+      reasonText = reason;
+    }
 
     if (!isOwner && !isAdmin) {
       return res.status(403).json({ message: "Forbidden" });
@@ -183,8 +193,21 @@ export const remove = async (req, res, next) => {
         status: article.status,
         deleted_by: isAdmin ? "admin" : "owner",
         owner_user_id: Number(article.user_id),
+        reason: reasonText,
       },
     });
+    
+    if (isAdmin && !isOwner && reasonText) {
+      await createNotification({
+        user_id: article.user_id,
+        type: "article_deleted",
+        message: `Artikel kamu yang berjudul "${article.title}" telah dihapus oleh admin. Alasan: ${reasonText}`,
+        meta: {
+          article_id: article.id,
+          reason: reasonText,
+        },
+      });
+    }
   } catch (err) {
     next(err);
   }
@@ -247,12 +270,12 @@ export const reject = async (req, res, next) => {
       return res.status(400).json({ message: "Rejection reason is required" });
     }
 
-    const article = await ArticleService.rejectArticle({
+    const rejectedAct = await ArticleService.rejectArticle({
       id: req.params.id,
       reason,
     });
 
-    res.json({ message: "Article rejected", article });
+    res.json({ message: "Article rejected", article: rejectedAct });
 
     await safeLog({
       user_id: req.user.id,
@@ -260,6 +283,17 @@ export const reject = async (req, res, next) => {
       metadata: {
         article_id: Number(req.params.id),
         status: "rejected",
+        reason,
+      },
+    });
+    
+    // Notify user about rejection
+    await createNotification({
+      user_id: rejectedAct.user_id,
+      type: "article_rejected",
+      message: `Pengajuan artikel kamu telah ditolak oleh admin. Alasan: ${reason}`,
+      meta: {
+        article_id: rejectedAct.id,
         reason,
       },
     });

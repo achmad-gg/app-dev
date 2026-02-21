@@ -266,6 +266,7 @@ export const getPublicArticleById = async (id) => {
       a.id,
       a.title,
       a.content,
+      a.status,
       a.created_at,
       a.views,
       a.cover_image,

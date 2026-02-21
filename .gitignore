@@ -1,0 +1,7 @@
+article_be/.env
+article_fe/.env
+article_be/uploads
+article_fe/package-lock.json
+article_be/package-lock.json
+article_be/node_modules
+article_fe/node_modules

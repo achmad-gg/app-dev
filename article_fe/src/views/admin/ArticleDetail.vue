@@ -27,7 +27,8 @@ const coverImageUrl = computed(() => {
 const route = useRoute()
 const router = useRouter()
 const articleStore = useArticleStore()
-const auth = useAuthStore()
+const authStore = useAuthStore()
+const isAuthenticated = computed(() => authStore.isAuthenticated)
 const commentStore = useCommentStore()
 
 const article = computed(() => articleStore.articleDetail)
@@ -47,12 +48,12 @@ const goBackToAdminArticles = () => {
 }
 
 const canInteract = computed(() => {
-  return auth.isAuthenticated && articleStatus.value === 'approved'
+  return isAuthenticated.value && articleStatus.value === 'approved'
 })
 
 const interactDisabledReason = computed(() => {
   if (!article.value) return ''
-  if (!auth.isAuthenticated) return 'Login dulu untuk like & comment.'
+  if (!isAuthenticated.value) return 'Login dulu untuk like & comment.'
   if (articleStatus.value !== 'approved')
     return 'Like & comment hanya untuk artikel yang sudah approved.'
   return ''
@@ -290,8 +291,7 @@ onUnmounted(() => {
 
           <!-- Content -->
           <div class="prose prose-lg prose-gray max-w-none mb-12">
-            <div class="text-gray-700 leading-relaxed whitespace-pre-line text-base sm:text-lg">
-              {{ article.content }}
+            <div class="text-gray-700 leading-relaxed whitespace-pre-line text-base sm:text-lg" v-html="article.content">
             </div>
           </div>
 
@@ -305,7 +305,7 @@ onUnmounted(() => {
                 :article-id="article.id"
                 :status="article.status"
                 :can-interact="canInteract"
-                :is-authenticated="auth.isAuthenticated"
+                :is-authenticated="isAuthenticated"
                 @login-required="handleLikeGuarded"
               />
             </div>

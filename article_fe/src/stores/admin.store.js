@@ -168,9 +168,9 @@ export const useAdminStore = defineStore('admin', {
       })
     },
 
-    async deleteArticle(id) {
+    async deleteArticle(id, reason) {
       return this.withLoading('delete', async () => {
-        await deleteArticleAdminApi(id)
+        await deleteArticleAdminApi(id, reason)
 
         // hapus dari semua list
         this.articles = this.articles.filter((a) => a.id !== id)
@@ -190,8 +190,8 @@ export const useAdminStore = defineStore('admin', {
         if (idx !== -1) this.users[idx] = { ...this.users[idx], ...updated }
       })
     },
-    async blockUser(userId) {
-      const res = await blockUserApi(userId)
+    async blockUser(userId, reason) {
+      const res = await blockUserApi(userId, reason)
 
       // update local state biar reactive
       const index = this.users.findIndex((u) => u.id === userId)

@@ -25,7 +25,8 @@ const coverImageUrl = computed(() => {
 
 const route = useRoute()
 const articleStore = useArticleStore()
-const auth = useAuthStore()
+const authStore = useAuthStore()
+const isAuthenticated = computed(() => authStore.isAuthenticated)
 const commentStore = useCommentStore()
 
 const article = computed(() => articleStore.articleDetail)
@@ -41,12 +42,12 @@ const handleLikeGuarded = () => {
 }
 
 const canInteract = computed(() => {
-  return auth.isAuthenticated && articleStatus.value === 'approved'
+  return isAuthenticated.value && articleStatus.value === 'approved'
 })
 
 const interactDisabledReason = computed(() => {
   if (!article.value) return ''
-  if (!auth.isAuthenticated) return 'Login dulu untuk like & comment.'
+  if (!isAuthenticated.value) return 'Login dulu untuk like & comment.'
   if (articleStatus.value !== 'approved')
     return 'Like & comment hanya untuk artikel yang sudah approved.'
   return ''
@@ -218,7 +219,7 @@ onUnmounted(() => {
                 :article-id="article.id"
                 :status="article.status"
                 :can-interact="canInteract"
-                :is-authenticated="auth.isAuthenticated"
+                :is-authenticated="isAuthenticated"
                 @login-required="handleLikeGuarded"
               />
             </div>
