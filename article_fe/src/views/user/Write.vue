@@ -297,8 +297,8 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+  <div class="min-h-screen bg-gray-50/50">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
       <!-- Loading State -->
       <div v-if="loading" class="flex items-center justify-center py-20">
         <div class="text-center">
@@ -350,7 +350,7 @@ onUnmounted(() => {
               </svg>
             </button>
             <div class="flex-1">
-              <h1 class="text-3xl font-bold text-gray-900 tracking-tight">
+              <h1 class="font-heading text-3xl font-bold text-gray-900 tracking-tight">
                 {{ isEditMode ? 'Edit Article' : 'Write New Article' }}
               </h1>
               <p class="text-sm text-gray-600 mt-1">

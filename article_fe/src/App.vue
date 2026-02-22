@@ -1,5 +1,6 @@
 <script setup>
 import ConfirmModal from "@/components/ConfirmModal.vue";
+import LoadingOverlay from "@/components/LoadingOverlay.vue";
 import { useConfirm } from "@/composables/useConfirm";
 
 const { state, onCancel, onConfirm } = useConfirm();
@@ -16,6 +17,7 @@ function handleConfirm() {
 
 <template>
     <router-view />
+    <LoadingOverlay />
     <ConfirmModal
     v-model="state.open"
     :title="state.title"

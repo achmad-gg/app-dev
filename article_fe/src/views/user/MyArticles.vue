@@ -16,17 +16,17 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+  <div class="min-h-screen bg-gray-50/50">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
       
       <!-- Header -->
       <header class="mb-8">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 class="text-3xl sm:text-4xl font-bold text-gray-900 tracking-tight">
+            <h1 class="font-heading text-3xl sm:text-4xl font-bold text-gray-900 tracking-tight">
               My Articles
             </h1>
-            <p class="mt-2 text-sm sm:text-base text-gray-600">
+            <p class="mt-2 text-sm sm:text-base text-gray-500">
               Manage your drafts and published content
             </p>
           </div>

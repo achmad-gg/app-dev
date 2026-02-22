@@ -95,6 +95,11 @@ const router = createRouter({
 
 // ===== GLOBAL GUARD =====
 router.beforeEach(async (to) => {
+  // Start loading spinner on navigation
+  const { useLoadingStore } = await import('@/stores/loading.store')
+  const loadingStore = useLoadingStore()
+  loadingStore.startRoute()
+
   const auth = useAuthStore()
 
   if (!auth.initialized) {
@@ -122,6 +127,13 @@ router.beforeEach(async (to) => {
       return '/profile'
     }
   }
+})
+
+router.afterEach(() => {
+  import('@/stores/loading.store').then(({ useLoadingStore }) => {
+    const loadingStore = useLoadingStore()
+    loadingStore.endRoute()
+  })
 })
 
 export default router
