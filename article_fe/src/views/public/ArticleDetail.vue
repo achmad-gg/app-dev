@@ -1,12 +1,12 @@
 <script setup>
 import { onUnmounted, computed, watch, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useArticleStore } from '../stores/article.store'
-import { useAuthStore } from '../stores/auth.store'
+import { useArticleStore } from '@/stores/article.store'
+import { useAuthStore } from '@/stores/auth.store'
 import { useCommentStore } from '@/stores/comment.store'
 
-import LikeButton from '../components/LikeButton.vue'
-import CommentList from '../components/CommentList.vue'
+import LikeButton from '@/components/LikeButton.vue'
+import CommentList from '@/components/CommentList.vue'
 
 const API_BASE_URL = 'http://localhost:3000'
 
@@ -319,7 +319,7 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-@reference "../main.css";
+@reference "../../main.css";
 
 /* === PROSE STYLES FOR ARTICLE BODY === */
 .prose-custom {

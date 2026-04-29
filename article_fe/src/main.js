@@ -3,11 +3,13 @@ import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
 import api from './api/axios'
-import './main.css' 
+import '@/main.css' 
 
-createApp(App).use(createPinia()).use(router).mount('#app')
-
+// Set token BEFORE mounting so initial API calls have auth
 const token = localStorage.getItem('token')
 if (token) {
   api.defaults.headers.common.Authorization = `Bearer ${token}`
 }
+
+createApp(App).use(createPinia()).use(router).mount('#app')
+

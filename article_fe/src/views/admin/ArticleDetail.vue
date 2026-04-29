@@ -2,12 +2,12 @@
 <script setup>
 import { onUnmounted, computed, watch, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useArticleStore } from '../../stores/article.store'
-import { useAuthStore } from '../../stores/auth.store'
+import { useArticleStore } from '@/stores/article.store'
+import { useAuthStore } from '@profile.store'
 import { useCommentStore } from '@/stores/comment.store'
 
-import LikeButton from '../../components/LikeButton.vue'
-import CommentList from '../../components/CommentList.vue'
+import LikeButton from '@profile.store/components/LikeButton.vue'
+import CommentList from '@profile.store/components/CommentList.vue'
 
 const API_BASE_URL = 'http://localhost:3000'
 

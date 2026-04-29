@@ -12,12 +12,12 @@ const routes = [
     children: [
       {
         path: 'login',
-        component: () => import('@/views/Login.vue'),
+        component: () => import('@/views/auth/Login.vue'),
         meta: { guestOnly: true },
       },
       {
         path: 'register',
-        component: () => import('@/views/Register.vue'),
+        component: () => import('@/views/auth/Register.vue'),
         meta: { guestOnly: true },
       },
     ],
@@ -30,15 +30,15 @@ const routes = [
     children: [
       {
         path: '',
-        component: () => import('@/views/ArticleList.vue'),
+        component: () => import('@/views/public/ArticleList.vue'),
       },
       {
         path: 'articles/:id',
-        component: () => import('@/views/ArticleDetail.vue'),
+        component: () => import('@/views/public/ArticleDetail.vue'),
       },
       {
         path: 'profile',
-        component: () => import('@/views/Profile.vue'),
+        component: () => import('@/views/user/Profile.vue'),
         meta: { requiresAuth: true },
       },
       {

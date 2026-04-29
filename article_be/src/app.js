@@ -3,6 +3,8 @@ import express from "express";
 import cors from "cors";
 import morgan from "morgan";
 import helmet from "helmet";
+import compression from "compression";
+import { BaseError } from "./utils/BaseError.js";
 
 import authRoutes from "./routes/auth.routes.js";
 import articleRoutes from "./routes/article.routes.js";
@@ -37,6 +39,7 @@ app.use(
     },
   })
 )
+app.use(compression());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan("dev"));
@@ -63,7 +66,7 @@ app.use("/api/likes", likeRoutes);
 app.use("/api/admin", adminRoutes);
 app.use('/api/activity', activityRoutes)
 app.use("/api/profile", profileRoutes);
-app.use("/api/uploads", express.static("uploads"));
+// static files already served above via /api/uploads
 app.use('/api/notifications', notificationRoutes)
 app.use('/api/users', userRoutes)
 app.use('/api/activation', activationRoutes)
@@ -83,8 +86,15 @@ app.use((req, res) => {
 app.use((err, req, res, next) => {
   console.error(err);
 
+  if (err instanceof BaseError) {
+    return res.status(err.statusCode).json(err.toJSON());
+  }
+
   res.status(500).json({
-    message: "Internal Server Error",
+    message:
+      process.env.NODE_ENV === "production"
+        ? "Internal Server Error"
+        : err.message || "Internal Server Error",
   });
 });
 

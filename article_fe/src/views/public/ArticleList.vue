@@ -1,8 +1,8 @@
 <script setup>
 import { onMounted, ref, watch, computed } from 'vue'
-import { useArticleStore } from '../stores/article.store'
-import ArticleCard from '../components/ArticleCard.vue'
-import CategorySelect from '../components/CategorySelect.vue'
+import { useArticleStore } from '@/stores/article.store'
+import ArticleCard from '@/components/ArticleCard.vue'
+import CategorySelect from '@/components/CategorySelect.vue'
 import debounce from 'lodash.debounce'
 
 const articleStore = useArticleStore()
@@ -62,21 +62,33 @@ const clearFilters = () => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50/50">
+  <div class="min-h-screen bg-slate-50/50">
     <!-- Hero Section -->
-    <div class="bg-white border-b border-gray-100">
-      <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14 lg:py-16">
-        <div class="max-w-2xl">
-          <h1 class="font-heading text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 leading-tight tracking-tight">
+    <div class="relative overflow-hidden bg-gradient-to-br from-indigo-600 via-violet-600 to-purple-700">
+      <!-- Decorative blobs -->
+      <div class="absolute inset-0 overflow-hidden pointer-events-none">
+        <div class="absolute -top-24 -right-24 w-96 h-96 bg-white/10 rounded-full blur-3xl"></div>
+        <div class="absolute -bottom-32 -left-32 w-80 h-80 bg-indigo-400/20 rounded-full blur-3xl"></div>
+      </div>
+
+      <div class="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-14 sm:py-20 lg:py-24">
+        <div class="max-w-2xl animate-fade-in-up">
+          <span class="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold tracking-wider uppercase bg-white/15 text-white/90 rounded-full mb-4 backdrop-blur-sm">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            Latest Stories
+          </span>
+          <h1 class="font-heading text-3xl sm:text-4xl lg:text-5xl font-bold text-white leading-tight tracking-tight">
             Discover Stories
           </h1>
-          <p class="mt-3 sm:mt-4 text-base sm:text-lg text-gray-500 leading-relaxed">
+          <p class="mt-3 sm:mt-4 text-base sm:text-lg text-white/70 leading-relaxed max-w-lg">
             Explore the latest insights, perspectives, and expert stories from our community of writers.
           </p>
         </div>
 
         <!-- Search & Filter -->
-        <div class="mt-8 sm:mt-10 flex flex-col sm:flex-row gap-3">
+        <div class="mt-8 sm:mt-10 flex flex-col sm:flex-row gap-3" style="animation-delay: 0.15s">
           <!-- Search Input -->
           <div class="flex-1 relative">
             <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -88,7 +100,7 @@ const clearFilters = () => {
               v-model="keyword"
               type="text"
               placeholder="Search articles..."
-              class="w-full pl-11 pr-10 py-3 bg-white border-2 border-gray-200 rounded-xl text-sm font-medium text-gray-700 placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 focus:outline-none transition-all"
+              class="w-full pl-11 pr-10 py-3.5 bg-white/95 backdrop-blur-sm border-0 rounded-xl text-sm font-medium text-gray-700 placeholder-gray-400 focus:ring-2 focus:ring-white/50 focus:outline-none transition-all shadow-lg shadow-black/10"
             />
             <button
               v-if="keyword"
@@ -110,7 +122,7 @@ const clearFilters = () => {
           <button
             v-if="hasFilters"
             @click="clearFilters"
-            class="inline-flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
+            class="inline-flex items-center justify-center gap-2 px-4 py-3.5 text-sm font-medium text-white bg-white/15 hover:bg-white/25 backdrop-blur-sm rounded-xl transition-all"
           >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -121,13 +133,13 @@ const clearFilters = () => {
 
         <!-- Active Filters -->
         <div v-if="hasFilters" class="mt-4 flex flex-wrap items-center gap-2">
-          <span class="text-xs font-medium text-gray-400 uppercase tracking-wider">Filters:</span>
+          <span class="text-xs font-medium text-white/50 uppercase tracking-wider">Filters:</span>
           <span
             v-if="keyword"
-            class="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-700 text-xs font-medium rounded-full"
+            class="inline-flex items-center gap-1.5 px-3 py-1 bg-white/20 text-white text-xs font-medium rounded-full backdrop-blur-sm"
           >
             "{{ keyword }}"
-            <button @click="keyword = ''" class="hover:text-blue-900 transition-colors">
+            <button @click="keyword = ''" class="hover:text-white/70 transition-colors">
               <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
               </svg>
@@ -135,10 +147,10 @@ const clearFilters = () => {
           </span>
           <span
             v-if="categoryId"
-            class="inline-flex items-center gap-1.5 px-3 py-1 bg-violet-50 text-violet-700 text-xs font-medium rounded-full"
+            class="inline-flex items-center gap-1.5 px-3 py-1 bg-white/20 text-white text-xs font-medium rounded-full backdrop-blur-sm"
           >
             Category
-            <button @click="categoryId = null" class="hover:text-violet-900 transition-colors">
+            <button @click="categoryId = null" class="hover:text-white/70 transition-colors">
               <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
               </svg>
@@ -169,20 +181,20 @@ const clearFilters = () => {
           :key="n"
           class="bg-white rounded-2xl overflow-hidden border border-gray-100"
         >
-          <div class="aspect-[16/10] bg-gray-100 animate-pulse"></div>
+          <div class="aspect-[16/10] skeleton-shimmer"></div>
           <div class="p-5 space-y-3">
-            <div class="h-5 bg-gray-100 rounded-lg animate-pulse w-4/5"></div>
-            <div class="h-4 bg-gray-100 rounded-lg animate-pulse w-3/5"></div>
+            <div class="h-5 skeleton-shimmer rounded-lg w-4/5"></div>
+            <div class="h-4 skeleton-shimmer rounded-lg w-3/5"></div>
             <div class="space-y-2 pt-1">
-              <div class="h-3 bg-gray-50 rounded animate-pulse w-full"></div>
-              <div class="h-3 bg-gray-50 rounded animate-pulse w-4/5"></div>
+              <div class="h-3 skeleton-shimmer rounded w-full"></div>
+              <div class="h-3 skeleton-shimmer rounded w-4/5"></div>
             </div>
             <div class="flex items-center justify-between pt-3 border-t border-gray-50">
               <div class="flex items-center gap-2">
-                <div class="w-6 h-6 rounded-full bg-gray-100 animate-pulse"></div>
-                <div class="h-3 bg-gray-100 rounded animate-pulse w-16"></div>
+                <div class="w-6 h-6 rounded-full skeleton-shimmer"></div>
+                <div class="h-3 skeleton-shimmer rounded w-16"></div>
               </div>
-              <div class="h-3 bg-gray-100 rounded animate-pulse w-20"></div>
+              <div class="h-3 skeleton-shimmer rounded w-20"></div>
             </div>
           </div>
         </div>
@@ -192,9 +204,11 @@ const clearFilters = () => {
       <div v-else-if="articleStore.articles?.length > 0">
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           <ArticleCard
-            v-for="article in articleStore.articles"
+            v-for="(article, index) in articleStore.articles"
             :key="article.id"
             :article="article"
+            class="animate-fade-in-up"
+            :style="{ animationDelay: `${index * 0.06}s` }"
           />
         </div>
 
@@ -203,7 +217,7 @@ const clearFilters = () => {
           <button
             @click="prevPage"
             :disabled="currentPage <= 1"
-            class="inline-flex items-center gap-1.5 px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all disabled:opacity-30 disabled:pointer-events-none"
+            class="inline-flex items-center gap-1.5 px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 hover:shadow-sm transition-all disabled:opacity-30 disabled:pointer-events-none"
           >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
@@ -211,14 +225,14 @@ const clearFilters = () => {
             Prev
           </button>
 
-          <div class="px-4 py-2.5 text-sm font-semibold text-gray-700 bg-gray-100 rounded-xl tabular-nums">
+          <div class="px-4 py-2.5 text-sm font-semibold text-indigo-700 bg-indigo-50 rounded-xl tabular-nums">
             {{ currentPage }} / {{ totalPages }}
           </div>
 
           <button
             @click="nextPage"
             :disabled="isLastPage"
-            class="inline-flex items-center gap-1.5 px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all disabled:opacity-30 disabled:pointer-events-none"
+            class="inline-flex items-center gap-1.5 px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 hover:shadow-sm transition-all disabled:opacity-30 disabled:pointer-events-none"
           >
             Next
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -230,8 +244,8 @@ const clearFilters = () => {
 
       <!-- Empty State -->
       <div v-else class="flex flex-col items-center justify-center py-20 sm:py-28">
-        <div class="w-20 h-20 bg-gray-100 rounded-2xl flex items-center justify-center mb-5">
-          <svg class="w-10 h-10 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="w-20 h-20 bg-indigo-50 rounded-2xl flex items-center justify-center mb-5">
+          <svg class="w-10 h-10 text-indigo-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
               stroke-linecap="round"
               stroke-linejoin="round"
@@ -256,7 +270,7 @@ const clearFilters = () => {
         <button
           v-if="hasFilters"
           @click="clearFilters"
-          class="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors"
+          class="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors shadow-md shadow-indigo-200"
         >
           Clear all filters
         </button>

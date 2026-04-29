@@ -47,7 +47,7 @@ const goDetail = () => {
 
 <template>
   <article
-    class="group bg-white rounded-2xl overflow-hidden border border-gray-100 hover:border-gray-200 transition-all duration-300 cursor-pointer flex flex-col hover:shadow-lg hover:shadow-gray-200/50"
+    class="group bg-white rounded-2xl overflow-hidden border border-gray-100 hover:border-indigo-200/60 transition-all duration-300 cursor-pointer flex flex-col hover:shadow-xl hover:shadow-indigo-100/50 hover:-translate-y-1"
     @click="goDetail"
   >
     <!-- Cover Image -->
@@ -61,9 +61,9 @@ const goDetail = () => {
       />
       <div
         v-else
-        class="w-full h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center"
+        class="w-full h-full bg-gradient-to-br from-indigo-50 via-violet-50 to-purple-50 flex items-center justify-center"
       >
-        <svg class="w-10 h-10 text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-10 h-10 text-indigo-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
             stroke-linecap="round"
             stroke-linejoin="round"
@@ -76,7 +76,7 @@ const goDetail = () => {
       <!-- Category Badge -->
       <div class="absolute top-3 left-3">
         <span
-          class="inline-block px-2.5 py-1 text-[11px] font-semibold tracking-wide uppercase bg-white/90 backdrop-blur-sm text-gray-700 rounded-lg shadow-sm"
+          class="inline-block px-2.5 py-1 text-[11px] font-semibold tracking-wide uppercase bg-white/90 backdrop-blur-sm text-indigo-700 rounded-lg shadow-sm"
         >
           {{ article?.category_name || article?.category || 'Uncategorized' }}
         </span>
@@ -87,7 +87,7 @@ const goDetail = () => {
     <div class="flex flex-col flex-1 p-5">
       <!-- Title -->
       <h3
-        class="font-heading text-lg sm:text-xl font-semibold text-gray-900 leading-snug mb-2 line-clamp-2 group-hover:text-blue-700 transition-colors duration-200"
+        class="font-heading text-lg sm:text-xl font-semibold text-gray-900 leading-snug mb-2 line-clamp-2 group-hover:text-indigo-700 transition-colors duration-200"
       >
         {{ article?.title || '-' }}
       </h3>
@@ -100,7 +100,7 @@ const goDetail = () => {
       <!-- Meta -->
       <div class="flex items-center justify-between pt-4 border-t border-gray-50">
         <div class="flex items-center gap-2">
-          <div class="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center">
+          <div class="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center">
             <span class="text-[10px] font-bold text-white uppercase">
               {{ (article?.fullname || article?.author || 'A').charAt(0) }}
             </span>

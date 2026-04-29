@@ -34,6 +34,7 @@ const draftHistory = ref([])
 const saveSuccess = ref(false)
 const coverFile = ref(null)
 const coverPreview = ref(null)
+const currentDraftId = ref(null)
 
 onMounted(async () => {
   categoryStore.fetchCategories()
@@ -112,8 +113,12 @@ const saveDraft = () => {
     return
   }
 
+  if (!currentDraftId.value) {
+    currentDraftId.value = Date.now()
+  }
+
   const draft = {
-    id: Date.now(),
+    id: currentDraftId.value,
     title: form.value.title || 'Untitled Draft',
     content: form.value.content,
     category_id: form.value.category_id,
@@ -126,8 +131,13 @@ const saveDraft = () => {
   const history = localStorage.getItem('article_draft_history')
   let drafts = history ? JSON.parse(history) : []
 
-  // Add new draft to beginning of array
-  drafts.unshift(draft)
+  // Update existing draft if found, otherwise unshift
+  const existingIndex = drafts.findIndex(d => d.id === currentDraftId.value)
+  if (existingIndex !== -1) {
+    drafts[existingIndex] = draft
+  } else {
+    drafts.unshift(draft)
+  }
 
   // Keep only last 10 drafts
   if (drafts.length > 10) {
@@ -147,6 +157,7 @@ const saveDraft = () => {
 
 // Load a specific draft
 const loadDraft = (draft) => {
+  currentDraftId.value = draft.id
   form.value = {
     title: draft.title === 'Untitled Draft' ? '' : draft.title,
     content: draft.content,
@@ -266,6 +277,10 @@ const submit = async () => {
       await articleStore.updateArticle(articleId.value, fd)
     } else {
       await articleStore.createArticle(fd)
+      // Delete the used draft upon successful creation
+      if (currentDraftId.value) {
+        deleteDraft(currentDraftId.value)
+      }
     }
 
     router.push('/my-articles')

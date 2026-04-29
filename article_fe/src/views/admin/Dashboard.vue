@@ -237,6 +237,7 @@ onMounted(() => {
       <section v-if="adminStore.stats" class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <!-- User Management -->
         <div
+          @click="router.push('/admin/users')"
           class="bg-white rounded-2xl p-6 border border-gray-200 hover:border-gray-300 transition-all duration-300 group cursor-pointer"
         >
           <div class="flex items-center gap-4">
@@ -275,89 +276,24 @@ onMounted(() => {
           </div>
         </div>
 
-        <!-- Content Moderation -->
-        <div
-          class="bg-white rounded-2xl p-6 border border-gray-200 hover:border-gray-300 transition-all duration-300 group cursor-pointer"
-        >
-          <div class="flex items-center gap-4">
-            <div class="p-4 bg-purple-50 rounded-xl group-hover:bg-purple-100 transition-colors">
-              <svg
-                class="w-6 h-6 text-purple-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
-                />
-              </svg>
-            </div>
-            <div class="flex-1">
-              <h4 class="font-semibold text-gray-900 mb-1">Content Moderation</h4>
-              <p class="text-sm text-gray-600">Review and approve content</p>
-            </div>
-            <svg
-              class="w-5 h-5 text-gray-400 group-hover:text-gray-600 group-hover:translate-x-1 transition-all"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M9 5l7 7-7 7"
-              />
-            </svg>
-          </div>
-        </div>
+      </section>
 
-        <!-- System Settings -->
-        <div
-          class="bg-white rounded-2xl p-6 border border-gray-200 hover:border-gray-300 transition-all duration-300 group cursor-pointer"
-        >
-          <div class="flex items-center gap-4">
-            <div class="p-4 bg-gray-50 rounded-xl group-hover:bg-gray-100 transition-colors">
-              <svg
-                class="w-6 h-6 text-gray-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-                />
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                />
-              </svg>
+      <!-- Pending Articles Preview -->
+      <section v-if="adminStore.pendingArticles && adminStore.pendingArticles.length > 0" class="bg-white rounded-2xl border border-gray-200 overflow-hidden mt-8">
+        <div class="px-6 py-5 border-b border-gray-200 flex justify-between items-center">
+          <div>
+            <h3 class="text-lg font-semibold text-gray-900">Pending Articles</h3>
+            <p class="text-sm text-gray-600 mt-1">Articles awaiting review</p>
+          </div>
+          <button @click="router.push('/admin/articles')" class="text-blue-600 text-sm font-medium hover:text-blue-700">View All</button>
+        </div>
+        <div class="divide-y divide-gray-200">
+          <div v-for="article in adminStore.pendingArticles.slice(0, 5)" :key="article.id" class="p-6 hover:bg-gray-50 transition-colors flex justify-between items-center">
+            <div>
+              <h4 class="font-medium text-gray-900">{{ article.title }}</h4>
+              <p class="text-sm text-gray-500 mt-1">By {{ article.author_email }}</p>
             </div>
-            <div class="flex-1">
-              <h4 class="font-semibold text-gray-900 mb-1">System Settings</h4>
-              <p class="text-sm text-gray-600">Configure system preferences</p>
-            </div>
-            <svg
-              class="w-5 h-5 text-gray-400 group-hover:text-gray-600 group-hover:translate-x-1 transition-all"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M9 5l7 7-7 7"
-              />
-            </svg>
+            <button @click="router.push('/admin/articles/detail/' + article.id)" class="px-4 py-2 bg-blue-50 text-blue-600 rounded-lg text-sm font-medium hover:bg-blue-100 transition-colors">Review</button>
           </div>
         </div>
       </section>
@@ -449,7 +385,7 @@ onMounted(() => {
                   {{ a.action.replaceAll('_', ' ') }}
                 </p>
                 <p class="text-xs text-gray-500">
-                  User #{{ a.user_id }} ·
+                  {{ a.fullname || a.email || ('User #' + a.user_id) }} ·
                   {{ new Date(a.created_at).toLocaleString() }}
                 </p>
               </div>

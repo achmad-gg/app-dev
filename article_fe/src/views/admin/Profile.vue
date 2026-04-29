@@ -1,8 +1,8 @@
 <!-- admin/Profile.vue -->
 <script setup>
 import { onMounted, ref, computed } from 'vue'
-import { useProfileStore } from '../../stores/profile.store'
-import { useAuthStore } from '../../stores/auth.store'
+import { useProfileStore } from '@/stores/profile.store'
+import { useAuthStore } from '@/stores/auth.store'
 import { useRouter, useRoute } from 'vue-router'
 
 const profileStore = useProfileStore()

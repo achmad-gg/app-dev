@@ -4,6 +4,7 @@ import { authMiddleware } from "../middlewares/auth.middleware.js";
 import { roleMiddleware } from "../middlewares/role.middleware.js";
 import { uploadArticleImage } from "../middlewares/uploadArticleImage.middlewares.js";
 import { writeGuard } from '../middlewares/writeGuard.js'
+import { articleCreateRules, articleUpdateRules, rejectRules, validate } from '../middlewares/validator.js'
 
 const router = express.Router();
 
@@ -22,6 +23,7 @@ router.post(
   "/create",
   authMiddleware,
   uploadArticleImage.single("cover_image"), writeGuard,
+  articleCreateRules, validate,
   controller.create,
 );
 router.get("/my", authMiddleware, controller.findMyArticles);
@@ -50,6 +52,7 @@ router.patch(
   "/:id/reject",
   authMiddleware,
   roleMiddleware(["admin", "moderator"]),
+  rejectRules, validate,
   controller.reject,
 );
 
@@ -60,6 +63,7 @@ router.put(
   "/:id",
   authMiddleware,
   uploadArticleImage.single("cover_image"), writeGuard,
+  articleUpdateRules, validate,
   controller.update,
 );
 router.delete("/:id", authMiddleware, controller.remove);

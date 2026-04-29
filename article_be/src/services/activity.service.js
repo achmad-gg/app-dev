@@ -7,7 +7,8 @@ export const getLogs = async ({ page, limit }) => {
   const data = await pool.query(
     `
     SELECT a.id, a.action, a.created_at,
-           u.email,
+           a.user_id,
+           u.email, u.fullname,
            a.metadata
     FROM activity_logs a
     LEFT JOIN users u ON u.id = a.user_id
