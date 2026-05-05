@@ -424,12 +424,12 @@ onMounted(() => adminStore.fetchArticles('all'))
                       {{ a.title }}
                     </h2>
                     <p
-                      v-if="a.author_name || a.user?.name || a.Author"
+                      v-if="a.author_name || a.user?.name || a.author"
                       class="text-xs text-gray-500 mt-1"
                     >
                       by
                       <span class="font-medium text-gray-700">{{
-                        a.author_name || a.user?.name || a.Author
+                        a.author_name || a.user?.name || a.author
                       }}</span>
                     </p>
                   </div>

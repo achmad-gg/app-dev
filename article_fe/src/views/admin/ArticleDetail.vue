@@ -3,12 +3,11 @@
 import { onUnmounted, computed, watch, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useArticleStore } from '@/stores/article.store'
-import { useAuthStore } from '@profile.store'
+import { useAuthStore } from '@/stores/auth.store'
 import { useCommentStore } from '@/stores/comment.store'
 
-import LikeButton from '@profile.store/components/LikeButton.vue'
-import CommentList from '@profile.store/components/CommentList.vue'
-
+import LikeButton from '@/components/LikeButton.vue'
+import CommentList from '@/components/CommentList.vue'
 const API_BASE_URL = 'http://localhost:3000'
 
 const coverImageUrl = computed(() => {
@@ -288,11 +287,12 @@ onUnmounted(() => {
             {{ article.title }}
           </h1>
 
-
           <!-- Content -->
           <div class="prose prose-lg prose-gray max-w-none mb-12">
-            <div class="text-gray-700 leading-relaxed whitespace-pre-line text-base sm:text-lg" v-html="article.content">
-            </div>
+            <div
+              class="text-gray-700 leading-relaxed whitespace-pre-line text-base sm:text-lg"
+              v-html="article.content"
+            ></div>
           </div>
 
           <div class="border-t border-gray-200"></div>

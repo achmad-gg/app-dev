@@ -6,6 +6,7 @@ import {
   updateProfileApi,
   uploadAvatarApi,
   deleteAvatarApi,
+  changePasswordApi,
 } from '../api/profile.api'
 import api from '@/api/axios'
 

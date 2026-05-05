@@ -77,15 +77,15 @@ export const deleteAvatar = async (req, res, next) => {
 
 
 export const changePassword = async (req, res, next) => {
-  if (new_password.length < 6) {
-    return res.status(400).json({ message: "Password min 6 chars" });
-  }
-
   try {
     const { old_password, new_password } = req.body;
 
     if (!old_password || !new_password) {
       return res.status(400).json({ message: "Password required" });
+    }
+
+    if (new_password.length < 6) {
+      return res.status(400).json({ message: "Password min 6 chars" });
     }
 
     const { rows } = await pool.query(
